@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("7kB6TUSc5NtpMcStvWmcyPuiUhTXPkHxKHLbzcqu74MC");
+declare_id!("EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24");
 
 pub mod context;
 pub mod state;
@@ -29,6 +29,35 @@ pub mod sol_mind_protocol {
             treasury,
             authorities,
             ctx.bumps.project_config,
+        )
+    }
+
+    pub fn create_minter_config(
+        ctx: Context<CreateMinterConfig>,
+        name: String,
+        mint_price: u64,
+        max_supply: u64,
+        assets_config: Option<AssetsConfig>,
+        uri: Option<String>,
+        plugins: Option<Vec<Vec<u8>>>,
+    ) -> Result<()> {
+        let decoded_plugins = decoded_core_plugins(plugins)?;
+    
+        ctx.accounts.create_minter_config(
+            name, mint_price, max_supply, assets_config, uri, decoded_plugins, &ctx.bumps
+        )
+    }
+
+    pub fn mint_asset(
+        ctx: Context<MintAsset>,
+        name: Option<String>,
+        uri: Option<String>,
+        plugins: Option<Vec<Vec<u8>>>,
+    ) -> Result<()> {
+        let decoded_plugins = decoded_core_plugins(plugins)?;
+
+        ctx.accounts.mint_asset(
+            name, uri, decoded_plugins
         )
     }
 }

@@ -22,8 +22,6 @@ import {
   getStructEncoder,
   getU32Decoder,
   getU32Encoder,
-  getU64Decoder,
-  getU64Encoder,
   getUtf8Decoder,
   getUtf8Encoder,
   transformEncoder,
@@ -46,30 +44,24 @@ import {
 } from '@solana/kit';
 import { SOL_MIND_PROTOCOL_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
-import {
-  getAssetsConfigDecoder,
-  getAssetsConfigEncoder,
-  type AssetsConfig,
-  type AssetsConfigArgs,
-} from '../types';
 
-export const CREATE_MINTER_CONFIG_DISCRIMINATOR = new Uint8Array([
-  41, 145, 106, 217, 232, 35, 245, 155,
+export const MINT_ASSET_DISCRIMINATOR = new Uint8Array([
+  84, 175, 211, 156, 56, 250, 104, 118,
 ]);
 
-export function getCreateMinterConfigDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CREATE_MINTER_CONFIG_DISCRIMINATOR
-  );
+export function getMintAssetDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(MINT_ASSET_DISCRIMINATOR);
 }
 
-export type CreateMinterConfigInstruction<
+export type MintAssetInstruction<
   TProgram extends string = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
   TAccountPayer extends string | AccountMeta<string> = string,
+  TAccountOwner extends string | AccountMeta<string> = string,
   TAccountAuthority extends string | AccountMeta<string> = string,
-  TAccountCollection extends string | AccountMeta<string> = string,
+  TAccountMint extends string | AccountMeta<string> = string,
   TAccountMinterConfig extends string | AccountMeta<string> = string,
   TAccountProjectConfig extends string | AccountMeta<string> = string,
+  TAccountCollection extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -85,20 +77,26 @@ export type CreateMinterConfigInstruction<
         ? WritableSignerAccount<TAccountPayer> &
             AccountSignerMeta<TAccountPayer>
         : TAccountPayer,
+      TAccountOwner extends string
+        ? WritableSignerAccount<TAccountOwner> &
+            AccountSignerMeta<TAccountOwner>
+        : TAccountOwner,
       TAccountAuthority extends string
         ? WritableSignerAccount<TAccountAuthority> &
             AccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
-      TAccountCollection extends string
-        ? WritableSignerAccount<TAccountCollection> &
-            AccountSignerMeta<TAccountCollection>
-        : TAccountCollection,
+      TAccountMint extends string
+        ? WritableSignerAccount<TAccountMint> & AccountSignerMeta<TAccountMint>
+        : TAccountMint,
       TAccountMinterConfig extends string
         ? WritableAccount<TAccountMinterConfig>
         : TAccountMinterConfig,
       TAccountProjectConfig extends string
-        ? WritableAccount<TAccountProjectConfig>
+        ? ReadonlyAccount<TAccountProjectConfig>
         : TAccountProjectConfig,
+      TAccountCollection extends string
+        ? WritableAccount<TAccountCollection>
+        : TAccountCollection,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -109,33 +107,29 @@ export type CreateMinterConfigInstruction<
     ]
   >;
 
-export type CreateMinterConfigInstructionData = {
+export type MintAssetInstructionData = {
   discriminator: ReadonlyUint8Array;
-  name: string;
-  mintPrice: bigint;
-  maxSupply: bigint;
-  assetsConfig: Option<AssetsConfig>;
+  name: Option<string>;
   uri: Option<string>;
   plugins: Option<Array<ReadonlyUint8Array>>;
 };
 
-export type CreateMinterConfigInstructionDataArgs = {
-  name: string;
-  mintPrice: number | bigint;
-  maxSupply: number | bigint;
-  assetsConfig: OptionOrNullable<AssetsConfigArgs>;
+export type MintAssetInstructionDataArgs = {
+  name: OptionOrNullable<string>;
   uri: OptionOrNullable<string>;
   plugins: OptionOrNullable<Array<ReadonlyUint8Array>>;
 };
 
-export function getCreateMinterConfigInstructionDataEncoder(): Encoder<CreateMinterConfigInstructionDataArgs> {
+export function getMintAssetInstructionDataEncoder(): Encoder<MintAssetInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['name', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ['mintPrice', getU64Encoder()],
-      ['maxSupply', getU64Encoder()],
-      ['assetsConfig', getOptionEncoder(getAssetsConfigEncoder())],
+      [
+        'name',
+        getOptionEncoder(
+          addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())
+        ),
+      ],
       [
         'uri',
         getOptionEncoder(
@@ -151,17 +145,17 @@ export function getCreateMinterConfigInstructionDataEncoder(): Encoder<CreateMin
         ),
       ],
     ]),
-    (value) => ({ ...value, discriminator: CREATE_MINTER_CONFIG_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: MINT_ASSET_DISCRIMINATOR })
   );
 }
 
-export function getCreateMinterConfigInstructionDataDecoder(): Decoder<CreateMinterConfigInstructionData> {
+export function getMintAssetInstructionDataDecoder(): Decoder<MintAssetInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['name', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ['mintPrice', getU64Decoder()],
-    ['maxSupply', getU64Decoder()],
-    ['assetsConfig', getOptionDecoder(getAssetsConfigDecoder())],
+    [
+      'name',
+      getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())),
+    ],
     [
       'uri',
       getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())),
@@ -177,67 +171,74 @@ export function getCreateMinterConfigInstructionDataDecoder(): Decoder<CreateMin
   ]);
 }
 
-export function getCreateMinterConfigInstructionDataCodec(): Codec<
-  CreateMinterConfigInstructionDataArgs,
-  CreateMinterConfigInstructionData
+export function getMintAssetInstructionDataCodec(): Codec<
+  MintAssetInstructionDataArgs,
+  MintAssetInstructionData
 > {
   return combineCodec(
-    getCreateMinterConfigInstructionDataEncoder(),
-    getCreateMinterConfigInstructionDataDecoder()
+    getMintAssetInstructionDataEncoder(),
+    getMintAssetInstructionDataDecoder()
   );
 }
 
-export type CreateMinterConfigInput<
+export type MintAssetInput<
   TAccountPayer extends string = string,
+  TAccountOwner extends string = string,
   TAccountAuthority extends string = string,
-  TAccountCollection extends string = string,
+  TAccountMint extends string = string,
   TAccountMinterConfig extends string = string,
   TAccountProjectConfig extends string = string,
+  TAccountCollection extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountMplCoreProgram extends string = string,
 > = {
   payer: TransactionSigner<TAccountPayer>;
+  owner: TransactionSigner<TAccountOwner>;
   authority: TransactionSigner<TAccountAuthority>;
-  collection?: TransactionSigner<TAccountCollection>;
+  mint: TransactionSigner<TAccountMint>;
   minterConfig: Address<TAccountMinterConfig>;
   projectConfig: Address<TAccountProjectConfig>;
+  collection?: Address<TAccountCollection>;
   systemProgram?: Address<TAccountSystemProgram>;
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
-  name: CreateMinterConfigInstructionDataArgs['name'];
-  mintPrice: CreateMinterConfigInstructionDataArgs['mintPrice'];
-  maxSupply: CreateMinterConfigInstructionDataArgs['maxSupply'];
-  assetsConfig: CreateMinterConfigInstructionDataArgs['assetsConfig'];
-  uri: CreateMinterConfigInstructionDataArgs['uri'];
-  plugins: CreateMinterConfigInstructionDataArgs['plugins'];
+  name: MintAssetInstructionDataArgs['name'];
+  uri: MintAssetInstructionDataArgs['uri'];
+  plugins: MintAssetInstructionDataArgs['plugins'];
 };
 
-export function getCreateMinterConfigInstruction<
+export function getMintAssetInstruction<
   TAccountPayer extends string,
+  TAccountOwner extends string,
   TAccountAuthority extends string,
-  TAccountCollection extends string,
+  TAccountMint extends string,
   TAccountMinterConfig extends string,
   TAccountProjectConfig extends string,
+  TAccountCollection extends string,
   TAccountSystemProgram extends string,
   TAccountMplCoreProgram extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
-  input: CreateMinterConfigInput<
+  input: MintAssetInput<
     TAccountPayer,
+    TAccountOwner,
     TAccountAuthority,
-    TAccountCollection,
+    TAccountMint,
     TAccountMinterConfig,
     TAccountProjectConfig,
+    TAccountCollection,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): CreateMinterConfigInstruction<
+): MintAssetInstruction<
   TProgramAddress,
   TAccountPayer,
+  TAccountOwner,
   TAccountAuthority,
-  TAccountCollection,
+  TAccountMint,
   TAccountMinterConfig,
   TAccountProjectConfig,
+  TAccountCollection,
   TAccountSystemProgram,
   TAccountMplCoreProgram
 > {
@@ -248,10 +249,12 @@ export function getCreateMinterConfigInstruction<
   // Original accounts.
   const originalAccounts = {
     payer: { value: input.payer ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: true },
     authority: { value: input.authority ?? null, isWritable: true },
-    collection: { value: input.collection ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: true },
     minterConfig: { value: input.minterConfig ?? null, isWritable: true },
-    projectConfig: { value: input.projectConfig ?? null, isWritable: true },
+    projectConfig: { value: input.projectConfig ?? null, isWritable: false },
+    collection: { value: input.collection ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
   };
@@ -277,55 +280,61 @@ export function getCreateMinterConfigInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.payer),
+      getAccountMeta(accounts.owner),
       getAccountMeta(accounts.authority),
-      getAccountMeta(accounts.collection),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.minterConfig),
       getAccountMeta(accounts.projectConfig),
+      getAccountMeta(accounts.collection),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.mplCoreProgram),
     ],
-    data: getCreateMinterConfigInstructionDataEncoder().encode(
-      args as CreateMinterConfigInstructionDataArgs
+    data: getMintAssetInstructionDataEncoder().encode(
+      args as MintAssetInstructionDataArgs
     ),
     programAddress,
-  } as CreateMinterConfigInstruction<
+  } as MintAssetInstruction<
     TProgramAddress,
     TAccountPayer,
+    TAccountOwner,
     TAccountAuthority,
-    TAccountCollection,
+    TAccountMint,
     TAccountMinterConfig,
     TAccountProjectConfig,
+    TAccountCollection,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >);
 }
 
-export type ParsedCreateMinterConfigInstruction<
+export type ParsedMintAssetInstruction<
   TProgram extends string = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     payer: TAccountMetas[0];
-    authority: TAccountMetas[1];
-    collection?: TAccountMetas[2] | undefined;
-    minterConfig: TAccountMetas[3];
-    projectConfig: TAccountMetas[4];
-    systemProgram: TAccountMetas[5];
-    mplCoreProgram: TAccountMetas[6];
+    owner: TAccountMetas[1];
+    authority: TAccountMetas[2];
+    mint: TAccountMetas[3];
+    minterConfig: TAccountMetas[4];
+    projectConfig: TAccountMetas[5];
+    collection?: TAccountMetas[6] | undefined;
+    systemProgram: TAccountMetas[7];
+    mplCoreProgram: TAccountMetas[8];
   };
-  data: CreateMinterConfigInstructionData;
+  data: MintAssetInstructionData;
 };
 
-export function parseCreateMinterConfigInstruction<
+export function parseMintAssetInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedCreateMinterConfigInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 7) {
+): ParsedMintAssetInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 9) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -345,15 +354,15 @@ export function parseCreateMinterConfigInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       payer: getNextAccount(),
+      owner: getNextAccount(),
       authority: getNextAccount(),
-      collection: getNextOptionalAccount(),
+      mint: getNextAccount(),
       minterConfig: getNextAccount(),
       projectConfig: getNextAccount(),
+      collection: getNextOptionalAccount(),
       systemProgram: getNextAccount(),
       mplCoreProgram: getNextAccount(),
     },
-    data: getCreateMinterConfigInstructionDataDecoder().decode(
-      instruction.data
-    ),
+    data: getMintAssetInstructionDataDecoder().decode(instruction.data),
   };
 }

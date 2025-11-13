@@ -10,9 +10,21 @@ use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum SolMindProtocolError {
-    /// 6000 - PluginAuthorityPair could not be deserialized
+    /// 6000 - Collection requires an uri
+    #[error("Collection requires an uri")]
+    RequiredUri = 0x1770,
+    /// 6001 - PluginAuthorityPair could not be deserialized
     #[error("PluginAuthorityPair could not be deserialized")]
-    InvalidPlugin = 0x1770,
+    InvalidPlugin = 0x1771,
+    /// 6002 - If minter config don't have and asset config provide a name and uri
+    #[error("If minter config don't have and asset config provide a name and uri")]
+    RequireNameAnddUri = 0x1772,
+    /// 6003 - Mismatch with the collection on minter config
+    #[error("Mismatch with the collection on minter config")]
+    CollectionMismatch = 0x1773,
+    /// 6004 - Max supply reached
+    #[error("Max supply reached")]
+    MaxSupplyReached = 0x1774,
 }
 
 impl From<SolMindProtocolError> for solana_program_error::ProgramError {

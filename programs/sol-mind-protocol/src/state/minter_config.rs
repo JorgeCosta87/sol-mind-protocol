@@ -11,10 +11,13 @@ pub struct AssetsConfig {
 #[account]
 #[derive(InitSpace)]
 pub struct MinterConfig {
-    pub collection: Option<Pubkey>,
+    #[max_len(64)]
+    pub name: String,
     pub mint_price: u64,
+    pub mints_counter: u64,
     pub max_supply: u64, // if 0 unlimited
     pub assets_config: Option<AssetsConfig>,
+    pub collection: Option<Pubkey>,
     pub bump: u8,
 }
 

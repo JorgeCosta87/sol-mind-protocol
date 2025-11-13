@@ -22,8 +22,7 @@ impl ProjectConfig {
         self.autthorities.contains(key)
     }
 
-    pub fn increament_minter_config_counter(&self) -> u64 {
+    pub fn minter_config_next(&self) -> u64 {
         self.minter_config_counter.checked_add(1).unwrap()
     }
-
 }

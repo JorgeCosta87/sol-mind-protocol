@@ -8,4 +8,4 @@
 use solana_pubkey::{pubkey, Pubkey};
 
 /// `sol_mind_protocol` program ID.
-pub const SOL_MIND_PROTOCOL_ID: Pubkey = pubkey!("7kB6TUSc5NtpMcStvWmcyPuiUhTXPkHxKHLbzcqu74MC");
+pub const SOL_MIND_PROTOCOL_ID: Pubkey = pubkey!("EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24");

@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-sol_mind_protocol = "7kB6TUSc5NtpMcStvWmcyPuiUhTXPkHxKHLbzcqu74MC"
+sol_mind_protocol = "EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,3 +17,4 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
+generate = "npx codama run --all"

@@ -1,16 +1,19 @@
 use anchor_lang::prelude::*;
 
+use mpl_core::types::PluginAuthorityPair;
 use mpl_core::{
-    instructions::CreateV1CpiBuilder,
-    types::DataState,
+    instructions::CreateV1CpiBuilder, types::DataState
 };
 
 use crate::state::{ProjectConfig, MinterConfig};
+use crate::errors::ErrorCode;
 
 #[derive(Accounts)]
 pub struct MintAsset<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
     #[account(
         mut,
         constraint = project_config.check_authorities(authority.key)
@@ -20,12 +23,13 @@ pub struct MintAsset<'info> {
     #[account(mut)]
     pub mint: Signer<'info>,
     #[account(
+        mut,
         seeds = [
             b"minter_config",
             project_config.project_id.to_le_bytes().as_ref(),
-            project_config.increament_minter_config_counter().to_le_bytes().as_ref()
+            project_config.minter_config_counter.to_le_bytes().as_ref()
         ],
-        bump,
+        bump = minter_config.bump,
     )]
     pub minter_config: Account<'info, MinterConfig>,
     #[account(
@@ -50,9 +54,74 @@ pub struct MintAsset<'info> {
 impl<'info> MintAsset<'info>  {
     pub fn mint_asset(
         &mut self,
-        name: String,
-        uri: String,
+        name: Option<String>,
+        uri: Option<String>,
+        plugins: Option<Vec<PluginAuthorityPair>>,
     ) -> Result<()>{
+        if self.minter_config.max_supply > 0 {
+            require!(
+                self.minter_config.mints_counter < self.minter_config.max_supply,
+                ErrorCode::MaxSupplyReached
+            );
+        }
+
+        let (asset_name, asset_uri) = match &self.minter_config.assets_config {
+            Some(asset_config) => {
+                let asset_name = format!(
+                    "{} #{}",
+                    asset_config.asset_name_prefix,
+                    self.minter_config.mints_counter
+                );
+                let asset_uri = format!(
+                    "{}/{}/{}",
+                    asset_config.asset_uri_prefix,
+                    asset_config.asset_name_prefix,
+                    self.minter_config.mints_counter
+                );
+                (asset_name, asset_uri)
+            }
+            None => {
+                let asset_name = name.ok_or(error!(ErrorCode::RequireNameAnddUri))?;
+                let asset_uri = uri.ok_or(error!(ErrorCode::RequireNameAnddUri))?;
+                (asset_name, asset_uri)
+            }
+        };
+
+        let payer_info = self.payer.to_account_info();
+        let owner = self.owner.to_account_info();
+        let mpl_core_program_info = self.mpl_core_program.to_account_info();
+        let mint_info = self.mint.to_account_info();
+        let minter_config_info = self.minter_config.to_account_info();
+        let system_program_info = self.system_program.to_account_info();
+
+        let mut builder = CreateV1CpiBuilder::new(&mpl_core_program_info);
+        builder
+            .asset(&mint_info)
+            .payer(&payer_info)
+            .owner(Some(&owner))
+            .system_program(&system_program_info)
+            .data_state(DataState::AccountState)
+            .name(asset_name)
+            .uri(asset_uri);
+            
+        if let Some(collection) = &self.collection {
+            require!(
+                collection.key() == self.minter_config.collection.unwrap(),
+                ErrorCode::CollectionMismatch
+            );
+            builder
+                .authority(Some(&minter_config_info))
+                .collection(Some(collection.as_ref()));
+        } else {
+            builder
+                .authority(None)
+                .update_authority(None);
+        }
+
+        if let Some(plugins) = plugins {
+            builder.plugins(plugins);
+        }
+
         let project_id_bytes = self.project_config.project_id.to_le_bytes();
         let counter_bytes = self.project_config.minter_config_counter.to_le_bytes();
         let seeds = &[
@@ -64,29 +133,11 @@ impl<'info> MintAsset<'info>  {
 
         let signer_seeds: &[&[&[u8]]] = &[&seeds[..]];
 
-        let mpl_core_program_info = self.mpl_core_program.to_account_info();
-        let mint_info = self.mint.to_account_info();
-        let authority_info = self.authority.to_account_info();
-        let payer_info = self.payer.to_account_info();
-        let system_program_info = self.system_program.to_account_info();
-
-        let mut builder = CreateV1CpiBuilder::new(&mpl_core_program_info);
-        builder
-            .asset(&mint_info)
-            .authority(Some(&authority_info))
-            .payer(&payer_info)
-            .owner(Some(&payer_info))
-            .update_authority(None)
-            .system_program(&system_program_info)
-            .data_state(DataState::AccountState)
-            .name(name)
-            .uri(uri);
-
-        if let Some(collection) = &self.collection {
-            builder.collection(Some(collection.as_ref()));
-        }
-
         builder.invoke_signed(signer_seeds)?;
+
+        self.minter_config.mints_counter = self.minter_config.mints_counter
+            .checked_add(1)
+            .expect("Mints counter overflowed");
         
         Ok(())
     }

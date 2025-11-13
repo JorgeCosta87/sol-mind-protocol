@@ -7,6 +7,8 @@
 
 pub(crate) mod r#create_minter_config;
 pub(crate) mod r#initialize_project;
+pub(crate) mod r#mint_asset;
 
 pub use self::r#create_minter_config::*;
 pub use self::r#initialize_project::*;
+pub use self::r#mint_asset::*;
