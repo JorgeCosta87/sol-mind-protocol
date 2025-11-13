@@ -16,10 +16,11 @@ import {
 import {
   type ParsedCreateMinterConfigInstruction,
   type ParsedInitializeProjectInstruction,
+  type ParsedMintAssetInstruction,
 } from '../instructions';
 
 export const SOL_MIND_PROTOCOL_PROGRAM_ADDRESS =
-  '7kB6TUSc5NtpMcStvWmcyPuiUhTXPkHxKHLbzcqu74MC' as Address<'7kB6TUSc5NtpMcStvWmcyPuiUhTXPkHxKHLbzcqu74MC'>;
+  'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24' as Address<'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24'>;
 
 export enum SolMindProtocolAccount {
   MinterConfig,
@@ -60,6 +61,7 @@ export function identifySolMindProtocolAccount(
 export enum SolMindProtocolInstruction {
   CreateMinterConfig,
   InitializeProject,
+  MintAsset,
 }
 
 export function identifySolMindProtocolInstruction(
@@ -88,17 +90,31 @@ export function identifySolMindProtocolInstruction(
   ) {
     return SolMindProtocolInstruction.InitializeProject;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([84, 175, 211, 156, 56, 250, 104, 118])
+      ),
+      0
+    )
+  ) {
+    return SolMindProtocolInstruction.MintAsset;
+  }
   throw new Error(
     'The provided instruction could not be identified as a solMindProtocol instruction.'
   );
 }
 
 export type ParsedSolMindProtocolInstruction<
-  TProgram extends string = '7kB6TUSc5NtpMcStvWmcyPuiUhTXPkHxKHLbzcqu74MC',
+  TProgram extends string = 'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24',
 > =
   | ({
       instructionType: SolMindProtocolInstruction.CreateMinterConfig;
     } & ParsedCreateMinterConfigInstruction<TProgram>)
   | ({
       instructionType: SolMindProtocolInstruction.InitializeProject;
-    } & ParsedInitializeProjectInstruction<TProgram>);
+    } & ParsedInitializeProjectInstruction<TProgram>)
+  | ({
+      instructionType: SolMindProtocolInstruction.MintAsset;
+    } & ParsedMintAssetInstruction<TProgram>);

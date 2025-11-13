@@ -8,3 +8,4 @@
 
 export * from './createMinterConfig';
 export * from './initializeProject';
+export * from './mintAsset';

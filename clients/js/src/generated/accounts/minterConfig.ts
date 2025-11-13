@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   assertAccountExists,
   assertAccountsExist,
   combineCodec,
@@ -23,10 +25,14 @@ import {
   getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
   getU8Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   transformEncoder,
   type Account,
   type Address,
@@ -61,18 +67,22 @@ export function getMinterConfigDiscriminatorBytes() {
 
 export type MinterConfig = {
   discriminator: ReadonlyUint8Array;
-  collection: Option<Address>;
+  name: string;
   mintPrice: bigint;
+  mintsCounter: bigint;
   maxSupply: bigint;
   assetsConfig: Option<AssetsConfig>;
+  collection: Option<Address>;
   bump: number;
 };
 
 export type MinterConfigArgs = {
-  collection: OptionOrNullable<Address>;
+  name: string;
   mintPrice: number | bigint;
+  mintsCounter: number | bigint;
   maxSupply: number | bigint;
   assetsConfig: OptionOrNullable<AssetsConfigArgs>;
+  collection: OptionOrNullable<Address>;
   bump: number;
 };
 
@@ -80,10 +90,12 @@ export function getMinterConfigEncoder(): Encoder<MinterConfigArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['collection', getOptionEncoder(getAddressEncoder())],
+      ['name', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ['mintPrice', getU64Encoder()],
+      ['mintsCounter', getU64Encoder()],
       ['maxSupply', getU64Encoder()],
       ['assetsConfig', getOptionEncoder(getAssetsConfigEncoder())],
+      ['collection', getOptionEncoder(getAddressEncoder())],
       ['bump', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: MINTER_CONFIG_DISCRIMINATOR })
@@ -93,10 +105,12 @@ export function getMinterConfigEncoder(): Encoder<MinterConfigArgs> {
 export function getMinterConfigDecoder(): Decoder<MinterConfig> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['collection', getOptionDecoder(getAddressDecoder())],
+    ['name', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['mintPrice', getU64Decoder()],
+    ['mintsCounter', getU64Decoder()],
     ['maxSupply', getU64Decoder()],
     ['assetsConfig', getOptionDecoder(getAssetsConfigDecoder())],
+    ['collection', getOptionDecoder(getAddressDecoder())],
     ['bump', getU8Decoder()],
   ]);
 }

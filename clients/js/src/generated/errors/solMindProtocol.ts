@@ -14,18 +14,34 @@ import {
 } from '@solana/kit';
 import { SOL_MIND_PROTOCOL_PROGRAM_ADDRESS } from '../programs';
 
+/** RequiredUri: Collection requires an uri */
+export const SOL_MIND_PROTOCOL_ERROR__REQUIRED_URI = 0x1770; // 6000
 /** InvalidPlugin: PluginAuthorityPair could not be deserialized */
-export const SOL_MIND_PROTOCOL_ERROR__INVALID_PLUGIN = 0x1770; // 6000
+export const SOL_MIND_PROTOCOL_ERROR__INVALID_PLUGIN = 0x1771; // 6001
+/** RequireNameAnddUri: If minter config don't have and asset config provide a name and uri */
+export const SOL_MIND_PROTOCOL_ERROR__REQUIRE_NAME_ANDD_URI = 0x1772; // 6002
+/** CollectionMismatch: Mismatch with the collection on minter config */
+export const SOL_MIND_PROTOCOL_ERROR__COLLECTION_MISMATCH = 0x1773; // 6003
+/** MaxSupplyReached: Max supply reached */
+export const SOL_MIND_PROTOCOL_ERROR__MAX_SUPPLY_REACHED = 0x1774; // 6004
 
 export type SolMindProtocolError =
-  typeof SOL_MIND_PROTOCOL_ERROR__INVALID_PLUGIN;
+  | typeof SOL_MIND_PROTOCOL_ERROR__COLLECTION_MISMATCH
+  | typeof SOL_MIND_PROTOCOL_ERROR__INVALID_PLUGIN
+  | typeof SOL_MIND_PROTOCOL_ERROR__MAX_SUPPLY_REACHED
+  | typeof SOL_MIND_PROTOCOL_ERROR__REQUIRED_URI
+  | typeof SOL_MIND_PROTOCOL_ERROR__REQUIRE_NAME_ANDD_URI;
 
 let solMindProtocolErrorMessages:
   | Record<SolMindProtocolError, string>
   | undefined;
 if (process.env.NODE_ENV !== 'production') {
   solMindProtocolErrorMessages = {
+    [SOL_MIND_PROTOCOL_ERROR__COLLECTION_MISMATCH]: `Mismatch with the collection on minter config`,
     [SOL_MIND_PROTOCOL_ERROR__INVALID_PLUGIN]: `PluginAuthorityPair could not be deserialized`,
+    [SOL_MIND_PROTOCOL_ERROR__MAX_SUPPLY_REACHED]: `Max supply reached`,
+    [SOL_MIND_PROTOCOL_ERROR__REQUIRED_URI]: `Collection requires an uri`,
+    [SOL_MIND_PROTOCOL_ERROR__REQUIRE_NAME_ANDD_URI]: `If minter config don't have and asset config provide a name and uri`,
   };
 }
 
