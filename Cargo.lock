@@ -2563,7 +2563,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sol-mind-tests"
+name = "sol-mind-protocol-tests"
 version = "0.1.0"
 dependencies = [
  "anchor-lang 0.32.1",
@@ -2571,11 +2571,13 @@ dependencies = [
  "litesvm-token",
  "mpl-core",
  "sol-mind-protocol-client",
+ "solana-program 2.3.0",
  "solana-pubkey 4.0.0",
  "solana-sdk",
  "solana-sdk-ids 3.1.0",
  "spl-associated-token-account",
  "spl-token",
+ "utils",
 ]
 
 [[package]]
@@ -5548,6 +5550,14 @@ checksum = "0200d0fc04d809396c2ad43f3c95da3582a2556eba8d453c1087f4120ee352ff"
 dependencies = [
  "fnv",
  "lazy_static",
+]
+
+[[package]]
+name = "utils"
+version = "0.1.0"
+dependencies = [
+ "litesvm",
+ "solana-sdk",
 ]
 
 [[package]]

@@ -3,9 +3,9 @@ use anchor_lang::prelude::*;
 declare_id!("EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24");
 
 pub mod context;
-pub mod state;
 pub mod errors;
 pub mod helpers;
+pub mod state;
 
 pub use context::*;
 pub use helpers::*;
@@ -42,9 +42,15 @@ pub mod sol_mind_protocol {
         plugins: Option<Vec<Vec<u8>>>,
     ) -> Result<()> {
         let decoded_plugins = decoded_core_plugins(plugins)?;
-    
+
         ctx.accounts.create_minter_config(
-            name, mint_price, max_supply, assets_config, uri, decoded_plugins, &ctx.bumps
+            name,
+            mint_price,
+            max_supply,
+            assets_config,
+            uri,
+            decoded_plugins,
+            &ctx.bumps,
         )
     }
 
@@ -56,9 +62,6 @@ pub mod sol_mind_protocol {
     ) -> Result<()> {
         let decoded_plugins = decoded_core_plugins(plugins)?;
 
-        ctx.accounts.mint_asset(
-            name, uri, decoded_plugins
-        )
+        ctx.accounts.mint_asset(name, uri, decoded_plugins)
     }
 }
-

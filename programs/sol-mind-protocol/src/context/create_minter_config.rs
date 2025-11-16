@@ -1,12 +1,9 @@
 use anchor_lang::prelude::*;
 
-use mpl_core::{
-    instructions::CreateCollectionV1CpiBuilder, 
-    types::{PluginAuthorityPair}
-};
+use mpl_core::{instructions::CreateCollectionV1CpiBuilder, types::PluginAuthorityPair};
 
-use crate::state::{AssetsConfig, MinterConfig, ProjectConfig};
 use crate::errors::ErrorCode;
+use crate::state::{AssetsConfig, MinterConfig, ProjectConfig};
 
 #[derive(Accounts)]
 pub struct CreateMinterConfig<'info> {
@@ -15,7 +12,6 @@ pub struct CreateMinterConfig<'info> {
     #[account(
         mut,
         constraint = project_config.check_authorities(authority.key)
-    
     )]
     pub authority: Signer<'info>,
     #[account(mut)]
@@ -35,7 +31,7 @@ pub struct CreateMinterConfig<'info> {
     pub minter_config: Account<'info, MinterConfig>,
     #[account(mut)]
     pub project_config: Account<'info, ProjectConfig>,
-    
+
     pub system_program: Program<'info, System>,
     /// CHECK: Verified by address constraint to mpl_core::ID
     #[account(address = mpl_core::ID)]
@@ -90,7 +86,7 @@ impl<'info> CreateMinterConfig<'info> {
                 .plugins(plugins)
                 .invoke_signed(signer_seeds)?;
         }
-        
+
         Ok(())
     }
 }

@@ -12,8 +12,8 @@ pub struct InitializeProject<'info> {
         payer = owner,
         space = 8 + ProjectConfig::INIT_SPACE,
         seeds = [
-            b"project", 
-            owner.key.as_ref(), 
+            b"project",
+            owner.key.as_ref(),
             project_id.to_le_bytes().as_ref(),
         ],
         bump,
