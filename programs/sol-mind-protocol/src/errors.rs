@@ -11,6 +11,5 @@ pub enum ErrorCode {
     #[msg("Mismatch with the collection on minter config")]
     CollectionMismatch,
     #[msg("Max supply reached")]
-    MaxSupplyReached
-
+    MaxSupplyReached,
 }

@@ -1,0 +1,8 @@
+[package]
+name = "utils"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+litesvm = "0.8.1"
+solana-sdk = "3.0.0"

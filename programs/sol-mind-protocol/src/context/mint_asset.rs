@@ -1,12 +1,10 @@
 use anchor_lang::prelude::*;
 
 use mpl_core::types::PluginAuthorityPair;
-use mpl_core::{
-    instructions::CreateV1CpiBuilder, types::DataState
-};
+use mpl_core::{instructions::CreateV1CpiBuilder, types::DataState};
 
-use crate::state::{ProjectConfig, MinterConfig};
 use crate::errors::ErrorCode;
+use crate::state::{MinterConfig, ProjectConfig};
 
 #[derive(Accounts)]
 pub struct MintAsset<'info> {
@@ -17,7 +15,6 @@ pub struct MintAsset<'info> {
     #[account(
         mut,
         constraint = project_config.check_authorities(authority.key)
-    
     )]
     pub authority: Signer<'info>,
     #[account(mut)]
@@ -34,8 +31,8 @@ pub struct MintAsset<'info> {
     pub minter_config: Account<'info, MinterConfig>,
     #[account(
         seeds = [
-            b"project", 
-            project_config.owner.as_ref(), 
+            b"project",
+            project_config.owner.as_ref(),
             project_config.project_id.to_le_bytes().as_ref(),
         ],
         bump = project_config.bump,
@@ -51,13 +48,13 @@ pub struct MintAsset<'info> {
     pub mpl_core_program: UncheckedAccount<'info>,
 }
 
-impl<'info> MintAsset<'info>  {
+impl<'info> MintAsset<'info> {
     pub fn mint_asset(
         &mut self,
         name: Option<String>,
         uri: Option<String>,
         plugins: Option<Vec<PluginAuthorityPair>>,
-    ) -> Result<()>{
+    ) -> Result<()> {
         if self.minter_config.max_supply > 0 {
             require!(
                 self.minter_config.mints_counter < self.minter_config.max_supply,
@@ -69,8 +66,7 @@ impl<'info> MintAsset<'info>  {
             Some(asset_config) => {
                 let asset_name = format!(
                     "{} #{}",
-                    asset_config.asset_name_prefix,
-                    self.minter_config.mints_counter
+                    asset_config.asset_name_prefix, self.minter_config.mints_counter
                 );
                 let asset_uri = format!(
                     "{}/{}/{}",
@@ -103,7 +99,7 @@ impl<'info> MintAsset<'info>  {
             .data_state(DataState::AccountState)
             .name(asset_name)
             .uri(asset_uri);
-            
+
         if let Some(collection) = &self.collection {
             require!(
                 collection.key() == self.minter_config.collection.unwrap(),
@@ -113,9 +109,7 @@ impl<'info> MintAsset<'info>  {
                 .authority(Some(&minter_config_info))
                 .collection(Some(collection.as_ref()));
         } else {
-            builder
-                .authority(None)
-                .update_authority(None);
+            builder.authority(None).update_authority(None);
         }
 
         if let Some(plugins) = plugins {
@@ -135,10 +129,12 @@ impl<'info> MintAsset<'info>  {
 
         builder.invoke_signed(signer_seeds)?;
 
-        self.minter_config.mints_counter = self.minter_config.mints_counter
+        self.minter_config.mints_counter = self
+            .minter_config
+            .mints_counter
             .checked_add(1)
             .expect("Mints counter overflowed");
-        
+
         Ok(())
     }
 }

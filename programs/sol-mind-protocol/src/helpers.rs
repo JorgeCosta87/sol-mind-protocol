@@ -1,9 +1,10 @@
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 use mpl_core::types::PluginAuthorityPair;
-use crate::errors::ErrorCode;
 
-
-pub fn decoded_core_plugins(plugins: Option<Vec<Vec<u8>>>) -> Result<Option<Vec<PluginAuthorityPair>>>{
+pub fn decoded_core_plugins(
+    plugins: Option<Vec<Vec<u8>>>,
+) -> Result<Option<Vec<PluginAuthorityPair>>> {
     match plugins {
         Some(items) => {
             let mut out = Vec::with_capacity(items.len());
