@@ -58,6 +58,10 @@ fn test_create_project() {
 
     let project_name = "Test project".to_string();
     let project_description = "Project description".to_string();
+    let authorities = vec![
+        fixture.project_authority_1.pubkey(),
+        fixture.project_authority_2.pubkey(),
+    ];
 
     let result = Instructions::create_project(
         &mut fixture.svm,
@@ -66,10 +70,7 @@ fn test_create_project() {
         project_name.clone(),
         project_description.clone(),
         fixture.project_owner.pubkey(),
-        vec![
-            fixture.project_authority_1.pubkey(),
-            fixture.project_authority_2.pubkey(),
-        ],
+        authorities.clone(),
         fixture.payer.pubkey(),
         &[
             &fixture.project_owner.insecure_clone(),
@@ -102,7 +103,7 @@ fn test_create_project() {
             assert_eq!(protocol_config.fees.mint_asset.amount, FEE_MINT_ASSET_AMOUNT);
             assert_eq!(protocol_config.fees.create_minter_config.amount, FEE_CREATE_MINTER_CONFIG_AMOUNT);
             assert_eq!(protocol_config.fees.generic_operation.amount, FEE_GENERIC_OPERATION_AMOUNT);
-            assert!(project_config.autthorities.contains(&fixture.project_authority_1.pubkey()), "Wrong authority added");
+            assert_eq!(project_config.autthorities, authorities);
             
             assert_eq!(protocol_final_balance, protocol_initial_balance + protocol_config.fees.create_project.amount)
         
@@ -252,6 +253,53 @@ fn test_protocol_fees_transfer() {
 }
 
 #[test]
+fn test_protocol_fees_transfer_non_admin() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol();
+
+    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    fixture.svm
+        .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund protocol config");
+
+    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+
+    let transfer_amount = 1 * LAMPORTS_PER_SOL;
+    let destination = fixture.admin_2.pubkey();
+    let non_admin = Keypair::new();
+
+    let result = Instructions::protocol_fees_transfer(
+        &mut fixture.svm,
+        &fixture.program_id,
+        transfer_amount,
+        non_admin.pubkey(),
+        destination,
+        fixture.payer.pubkey(),
+        &[
+            &fixture.payer.insecure_clone(),
+            &non_admin.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(_) => {
+            panic!("Transaction should have failed, non-admin cannot transfer fees");
+        }
+        Err(e) => {
+            let error_string = format!("{:?}", e);
+            assert!(
+                error_string.contains("Unauthorized"),
+                "Expected Unauthorized error, got: {:?}",
+                e
+            );
+
+            let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            assert_eq!(final_balance, initial_balance, "Balance should not change on failed transfer");
+        }
+    }
+}
+
+#[test]
 fn test_protocol_fees_transfer_to_non_whitelisted_address() {
     let mut fixture = TestFixture::new()
         .with_initialize_protocol();
@@ -281,7 +329,7 @@ fn test_protocol_fees_transfer_to_non_whitelisted_address() {
 
     match result {
         Ok(_) => {
-            panic!("Transaction should have failed - destination is not whitelisted");
+            panic!("Transaction should have failed, destination is not whitelisted");
         }
         Err(e) => {
             let error_string = format!("{:?}", e);
@@ -367,19 +415,15 @@ fn test_project_fees_transfer_by_non_owner() {
     let initial_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
 
     let transfer_amount = 1 * LAMPORTS_PER_SOL;
-
-
+    let destination = fixture.project_authority_1.pubkey();
     let non_owner = Keypair::new();
-    fixture.svm
-        .airdrop(&non_owner.pubkey(), 3 * LAMPORTS_PER_SOL)
-        .expect("Failed to fund project config");
 
     let result = Instructions::project_fees_transfer(
         &mut fixture.svm,
         &fixture.program_id,
         transfer_amount,
         non_owner.pubkey(),
-        fixture.project_authority_1.pubkey(),
+        destination,
         PROJECT_1_ID,
         fixture.payer.pubkey(),
         &[
@@ -390,7 +434,7 @@ fn test_project_fees_transfer_by_non_owner() {
 
     match result {
         Ok(_) => {
-            panic!("Transaction should have failed - non-owner cannot transfer from project");
+            panic!("Transaction should have failed, non-owner cannot transfer fees");
         }
         Err(e) => {
             let error_string = format!("{:?}", e);
