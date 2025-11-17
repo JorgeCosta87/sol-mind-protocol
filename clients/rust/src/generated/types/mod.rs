@@ -5,6 +5,12 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-pub(crate) mod r#assets_config;
+pub(crate) mod r#fee;
+pub(crate) mod r#fee_type;
+pub(crate) mod r#fees_structure;
+pub(crate) mod r#operation;
 
-pub use self::r#assets_config::*;
+pub use self::r#fee::*;
+pub use self::r#fee_type::*;
+pub use self::r#fees_structure::*;
+pub use self::r#operation::*;

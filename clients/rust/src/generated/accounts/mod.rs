@@ -5,8 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-pub(crate) mod r#minter_config;
 pub(crate) mod r#project_config;
+pub(crate) mod r#protocol_config;
 
-pub use self::r#minter_config::*;
 pub use self::r#project_config::*;
+pub use self::r#protocol_config::*;

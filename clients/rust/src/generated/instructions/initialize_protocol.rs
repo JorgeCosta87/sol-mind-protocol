@@ -5,26 +5,27 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use crate::generated::types::FeesStructure;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_pubkey::Pubkey;
 
-pub const INITIALIZE_PROJECT_DISCRIMINATOR: [u8; 8] = [69, 126, 215, 37, 20, 60, 73, 235];
+pub const INITIALIZE_PROTOCOL_DISCRIMINATOR: [u8; 8] = [188, 233, 252, 106, 134, 146, 202, 91];
 
 /// Accounts.
 #[derive(Debug)]
-pub struct InitializeProject {
-    pub owner: solana_pubkey::Pubkey,
+pub struct InitializeProtocol {
+    pub payer: solana_pubkey::Pubkey,
 
-    pub project_config: solana_pubkey::Pubkey,
+    pub protocol_config: solana_pubkey::Pubkey,
 
     pub system_program: solana_pubkey::Pubkey,
 }
 
-impl InitializeProject {
+impl InitializeProtocol {
     pub fn instruction(
         &self,
-        args: InitializeProjectInstructionArgs,
+        args: InitializeProtocolInstructionArgs,
     ) -> solana_instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
@@ -32,13 +33,13 @@ impl InitializeProject {
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: InitializeProjectInstructionArgs,
+        args: InitializeProtocolInstructionArgs,
         remaining_accounts: &[solana_instruction::AccountMeta],
     ) -> solana_instruction::Instruction {
         let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_instruction::AccountMeta::new(self.owner, true));
+        accounts.push(solana_instruction::AccountMeta::new(self.payer, true));
         accounts.push(solana_instruction::AccountMeta::new(
-            self.project_config,
+            self.protocol_config,
             false,
         ));
         accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -46,7 +47,7 @@ impl InitializeProject {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = InitializeProjectInstructionData::new()
+        let mut data = InitializeProtocolInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -62,14 +63,14 @@ impl InitializeProject {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct InitializeProjectInstructionData {
+pub struct InitializeProtocolInstructionData {
     discriminator: [u8; 8],
 }
 
-impl InitializeProjectInstructionData {
+impl InitializeProtocolInstructionData {
     pub fn new() -> Self {
         Self {
-            discriminator: [69, 126, 215, 37, 20, 60, 73, 235],
+            discriminator: [188, 233, 252, 106, 134, 146, 202, 91],
         }
     }
 
@@ -78,7 +79,7 @@ impl InitializeProjectInstructionData {
     }
 }
 
-impl Default for InitializeProjectInstructionData {
+impl Default for InitializeProtocolInstructionData {
     fn default() -> Self {
         Self::new()
     }
@@ -86,52 +87,48 @@ impl Default for InitializeProjectInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct InitializeProjectInstructionArgs {
-    pub project_id: u64,
-    pub name: String,
-    pub description: String,
-    pub treasury: Pubkey,
-    pub authorities: Vec<Pubkey>,
+pub struct InitializeProtocolInstructionArgs {
+    pub admins: Vec<Pubkey>,
+    pub whitelist_transfer_addrs: Vec<Pubkey>,
+    pub fees: FeesStructure,
 }
 
-impl InitializeProjectInstructionArgs {
+impl InitializeProtocolInstructionArgs {
     pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
         borsh::to_vec(self)
     }
 }
 
-/// Instruction builder for `InitializeProject`.
+/// Instruction builder for `InitializeProtocol`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` owner
-///   1. `[writable]` project_config
+///   0. `[writable, signer]` payer
+///   1. `[writable]` protocol_config
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct InitializeProjectBuilder {
-    owner: Option<solana_pubkey::Pubkey>,
-    project_config: Option<solana_pubkey::Pubkey>,
+pub struct InitializeProtocolBuilder {
+    payer: Option<solana_pubkey::Pubkey>,
+    protocol_config: Option<solana_pubkey::Pubkey>,
     system_program: Option<solana_pubkey::Pubkey>,
-    project_id: Option<u64>,
-    name: Option<String>,
-    description: Option<String>,
-    treasury: Option<Pubkey>,
-    authorities: Option<Vec<Pubkey>>,
+    admins: Option<Vec<Pubkey>>,
+    whitelist_transfer_addrs: Option<Vec<Pubkey>>,
+    fees: Option<FeesStructure>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
-impl InitializeProjectBuilder {
+impl InitializeProtocolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
     #[inline(always)]
-    pub fn owner(&mut self, owner: solana_pubkey::Pubkey) -> &mut Self {
-        self.owner = Some(owner);
+    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+        self.payer = Some(payer);
         self
     }
     #[inline(always)]
-    pub fn project_config(&mut self, project_config: solana_pubkey::Pubkey) -> &mut Self {
-        self.project_config = Some(project_config);
+    pub fn protocol_config(&mut self, protocol_config: solana_pubkey::Pubkey) -> &mut Self {
+        self.protocol_config = Some(protocol_config);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -141,28 +138,18 @@ impl InitializeProjectBuilder {
         self
     }
     #[inline(always)]
-    pub fn project_id(&mut self, project_id: u64) -> &mut Self {
-        self.project_id = Some(project_id);
+    pub fn admins(&mut self, admins: Vec<Pubkey>) -> &mut Self {
+        self.admins = Some(admins);
         self
     }
     #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.name = Some(name);
+    pub fn whitelist_transfer_addrs(&mut self, whitelist_transfer_addrs: Vec<Pubkey>) -> &mut Self {
+        self.whitelist_transfer_addrs = Some(whitelist_transfer_addrs);
         self
     }
     #[inline(always)]
-    pub fn description(&mut self, description: String) -> &mut Self {
-        self.description = Some(description);
-        self
-    }
-    #[inline(always)]
-    pub fn treasury(&mut self, treasury: Pubkey) -> &mut Self {
-        self.treasury = Some(treasury);
-        self
-    }
-    #[inline(always)]
-    pub fn authorities(&mut self, authorities: Vec<Pubkey>) -> &mut Self {
-        self.authorities = Some(authorities);
+    pub fn fees(&mut self, fees: FeesStructure) -> &mut Self {
+        self.fees = Some(fees);
         self
     }
     /// Add an additional account to the instruction.
@@ -182,58 +169,59 @@ impl InitializeProjectBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = InitializeProject {
-            owner: self.owner.expect("owner is not set"),
-            project_config: self.project_config.expect("project_config is not set"),
+        let accounts = InitializeProtocol {
+            payer: self.payer.expect("payer is not set"),
+            protocol_config: self.protocol_config.expect("protocol_config is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
         };
-        let args = InitializeProjectInstructionArgs {
-            project_id: self.project_id.clone().expect("project_id is not set"),
-            name: self.name.clone().expect("name is not set"),
-            description: self.description.clone().expect("description is not set"),
-            treasury: self.treasury.clone().expect("treasury is not set"),
-            authorities: self.authorities.clone().expect("authorities is not set"),
+        let args = InitializeProtocolInstructionArgs {
+            admins: self.admins.clone().expect("admins is not set"),
+            whitelist_transfer_addrs: self
+                .whitelist_transfer_addrs
+                .clone()
+                .expect("whitelist_transfer_addrs is not set"),
+            fees: self.fees.clone().expect("fees is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
-/// `initialize_project` CPI accounts.
-pub struct InitializeProjectCpiAccounts<'a, 'b> {
-    pub owner: &'b solana_account_info::AccountInfo<'a>,
+/// `initialize_protocol` CPI accounts.
+pub struct InitializeProtocolCpiAccounts<'a, 'b> {
+    pub payer: &'b solana_account_info::AccountInfo<'a>,
 
-    pub project_config: &'b solana_account_info::AccountInfo<'a>,
+    pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_account_info::AccountInfo<'a>,
 }
 
-/// `initialize_project` CPI instruction.
-pub struct InitializeProjectCpi<'a, 'b> {
+/// `initialize_protocol` CPI instruction.
+pub struct InitializeProtocolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_account_info::AccountInfo<'a>,
 
-    pub owner: &'b solana_account_info::AccountInfo<'a>,
+    pub payer: &'b solana_account_info::AccountInfo<'a>,
 
-    pub project_config: &'b solana_account_info::AccountInfo<'a>,
+    pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: InitializeProjectInstructionArgs,
+    pub __args: InitializeProtocolInstructionArgs,
 }
 
-impl<'a, 'b> InitializeProjectCpi<'a, 'b> {
+impl<'a, 'b> InitializeProtocolCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_account_info::AccountInfo<'a>,
-        accounts: InitializeProjectCpiAccounts<'a, 'b>,
-        args: InitializeProjectInstructionArgs,
+        accounts: InitializeProtocolCpiAccounts<'a, 'b>,
+        args: InitializeProtocolInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
-            owner: accounts.owner,
-            project_config: accounts.project_config,
+            payer: accounts.payer,
+            protocol_config: accounts.protocol_config,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -262,9 +250,9 @@ impl<'a, 'b> InitializeProjectCpi<'a, 'b> {
         remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)],
     ) -> solana_program_error::ProgramResult {
         let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_instruction::AccountMeta::new(*self.owner.key, true));
+        accounts.push(solana_instruction::AccountMeta::new(*self.payer.key, true));
         accounts.push(solana_instruction::AccountMeta::new(
-            *self.project_config.key,
+            *self.protocol_config.key,
             false,
         ));
         accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -278,7 +266,7 @@ impl<'a, 'b> InitializeProjectCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = InitializeProjectInstructionData::new()
+        let mut data = InitializeProtocolInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
@@ -291,8 +279,8 @@ impl<'a, 'b> InitializeProjectCpi<'a, 'b> {
         };
         let mut account_infos = Vec::with_capacity(4 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.owner.clone());
-        account_infos.push(self.project_config.clone());
+        account_infos.push(self.payer.clone());
+        account_infos.push(self.protocol_config.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -306,45 +294,43 @@ impl<'a, 'b> InitializeProjectCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `InitializeProject` via CPI.
+/// Instruction builder for `InitializeProtocol` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` owner
-///   1. `[writable]` project_config
+///   0. `[writable, signer]` payer
+///   1. `[writable]` protocol_config
 ///   2. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct InitializeProjectCpiBuilder<'a, 'b> {
-    instruction: Box<InitializeProjectCpiBuilderInstruction<'a, 'b>>,
+pub struct InitializeProtocolCpiBuilder<'a, 'b> {
+    instruction: Box<InitializeProtocolCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> InitializeProjectCpiBuilder<'a, 'b> {
+impl<'a, 'b> InitializeProtocolCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(InitializeProjectCpiBuilderInstruction {
+        let instruction = Box::new(InitializeProtocolCpiBuilderInstruction {
             __program: program,
-            owner: None,
-            project_config: None,
+            payer: None,
+            protocol_config: None,
             system_program: None,
-            project_id: None,
-            name: None,
-            description: None,
-            treasury: None,
-            authorities: None,
+            admins: None,
+            whitelist_transfer_addrs: None,
+            fees: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
     }
     #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
+    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.payer = Some(payer);
         self
     }
     #[inline(always)]
-    pub fn project_config(
+    pub fn protocol_config(
         &mut self,
-        project_config: &'b solana_account_info::AccountInfo<'a>,
+        protocol_config: &'b solana_account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.project_config = Some(project_config);
+        self.instruction.protocol_config = Some(protocol_config);
         self
     }
     #[inline(always)]
@@ -356,28 +342,18 @@ impl<'a, 'b> InitializeProjectCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn project_id(&mut self, project_id: u64) -> &mut Self {
-        self.instruction.project_id = Some(project_id);
+    pub fn admins(&mut self, admins: Vec<Pubkey>) -> &mut Self {
+        self.instruction.admins = Some(admins);
         self
     }
     #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.instruction.name = Some(name);
+    pub fn whitelist_transfer_addrs(&mut self, whitelist_transfer_addrs: Vec<Pubkey>) -> &mut Self {
+        self.instruction.whitelist_transfer_addrs = Some(whitelist_transfer_addrs);
         self
     }
     #[inline(always)]
-    pub fn description(&mut self, description: String) -> &mut Self {
-        self.instruction.description = Some(description);
-        self
-    }
-    #[inline(always)]
-    pub fn treasury(&mut self, treasury: Pubkey) -> &mut Self {
-        self.instruction.treasury = Some(treasury);
-        self
-    }
-    #[inline(always)]
-    pub fn authorities(&mut self, authorities: Vec<Pubkey>) -> &mut Self {
-        self.instruction.authorities = Some(authorities);
+    pub fn fees(&mut self, fees: FeesStructure) -> &mut Self {
+        self.instruction.fees = Some(fees);
         self
     }
     /// Add an additional account to the instruction.
@@ -414,38 +390,24 @@ impl<'a, 'b> InitializeProjectCpiBuilder<'a, 'b> {
     #[allow(clippy::clone_on_copy)]
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
-        let args = InitializeProjectInstructionArgs {
-            project_id: self
+        let args = InitializeProtocolInstructionArgs {
+            admins: self.instruction.admins.clone().expect("admins is not set"),
+            whitelist_transfer_addrs: self
                 .instruction
-                .project_id
+                .whitelist_transfer_addrs
                 .clone()
-                .expect("project_id is not set"),
-            name: self.instruction.name.clone().expect("name is not set"),
-            description: self
-                .instruction
-                .description
-                .clone()
-                .expect("description is not set"),
-            treasury: self
-                .instruction
-                .treasury
-                .clone()
-                .expect("treasury is not set"),
-            authorities: self
-                .instruction
-                .authorities
-                .clone()
-                .expect("authorities is not set"),
+                .expect("whitelist_transfer_addrs is not set"),
+            fees: self.instruction.fees.clone().expect("fees is not set"),
         };
-        let instruction = InitializeProjectCpi {
+        let instruction = InitializeProtocolCpi {
             __program: self.instruction.__program,
 
-            owner: self.instruction.owner.expect("owner is not set"),
+            payer: self.instruction.payer.expect("payer is not set"),
 
-            project_config: self
+            protocol_config: self
                 .instruction
-                .project_config
-                .expect("project_config is not set"),
+                .protocol_config
+                .expect("protocol_config is not set"),
 
             system_program: self
                 .instruction
@@ -461,16 +423,14 @@ impl<'a, 'b> InitializeProjectCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct InitializeProjectCpiBuilderInstruction<'a, 'b> {
+struct InitializeProtocolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    project_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
+    protocol_config: Option<&'b solana_account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    project_id: Option<u64>,
-    name: Option<String>,
-    description: Option<String>,
-    treasury: Option<Pubkey>,
-    authorities: Option<Vec<Pubkey>>,
+    admins: Option<Vec<Pubkey>>,
+    whitelist_transfer_addrs: Option<Vec<Pubkey>>,
+    fees: Option<FeesStructure>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

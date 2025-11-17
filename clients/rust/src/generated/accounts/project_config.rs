@@ -23,11 +23,6 @@ pub struct ProjectConfig {
     pub description: String,
     #[cfg_attr(
         feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub treasury: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
         serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>")
     )]
     pub autthorities: Vec<Pubkey>,

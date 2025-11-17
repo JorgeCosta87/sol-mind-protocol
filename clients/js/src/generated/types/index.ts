@@ -6,4 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './assetsConfig';
+export * from './fee';
+export * from './feesStructure';
+export * from './feeType';
+export * from './operation';

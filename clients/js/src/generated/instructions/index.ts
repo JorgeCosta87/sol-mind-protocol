@@ -6,6 +6,9 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './createMinterConfig';
-export * from './initializeProject';
-export * from './mintAsset';
+export * from './createProject';
+export * from './initializeProtocol';
+export * from './projectFeesTransfer';
+export * from './protocolFeesTransfer';
+export * from './updateFees';
+export * from './updateSingleFee';

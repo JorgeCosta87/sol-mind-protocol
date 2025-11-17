@@ -5,27 +5,32 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::generated::types::AssetsConfig;
+use crate::generated::types::FeesStructure;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct MinterConfig {
+pub struct ProtocolConfig {
     pub discriminator: [u8; 8],
-    pub name: String,
-    pub mint_price: u64,
-    pub mints_counter: u64,
-    pub max_supply: u64,
-    pub assets_config: Option<AssetsConfig>,
-    pub collection: Option<Pubkey>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>")
+    )]
+    pub admins: Vec<Pubkey>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>")
+    )]
+    pub whitelist_transfer_addrs: Vec<Pubkey>,
+    pub fees: FeesStructure,
     pub bump: u8,
 }
 
-pub const MINTER_CONFIG_DISCRIMINATOR: [u8; 8] = [78, 211, 23, 6, 233, 19, 19, 236];
+pub const PROTOCOL_CONFIG_DISCRIMINATOR: [u8; 8] = [207, 91, 250, 28, 152, 179, 215, 209];
 
-impl MinterConfig {
+impl ProtocolConfig {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;
@@ -33,7 +38,7 @@ impl MinterConfig {
     }
 }
 
-impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for MinterConfig {
+impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for ProtocolConfig {
     type Error = std::io::Error;
 
     fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
@@ -43,30 +48,30 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for MinterConfig {
 }
 
 #[cfg(feature = "fetch")]
-pub fn fetch_minter_config(
+pub fn fetch_protocol_config(
     rpc: &solana_client::rpc_client::RpcClient,
     address: &solana_pubkey::Pubkey,
-) -> Result<crate::shared::DecodedAccount<MinterConfig>, std::io::Error> {
-    let accounts = fetch_all_minter_config(rpc, &[*address])?;
+) -> Result<crate::shared::DecodedAccount<ProtocolConfig>, std::io::Error> {
+    let accounts = fetch_all_protocol_config(rpc, &[*address])?;
     Ok(accounts[0].clone())
 }
 
 #[cfg(feature = "fetch")]
-pub fn fetch_all_minter_config(
+pub fn fetch_all_protocol_config(
     rpc: &solana_client::rpc_client::RpcClient,
     addresses: &[solana_pubkey::Pubkey],
-) -> Result<Vec<crate::shared::DecodedAccount<MinterConfig>>, std::io::Error> {
+) -> Result<Vec<crate::shared::DecodedAccount<ProtocolConfig>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-    let mut decoded_accounts: Vec<crate::shared::DecodedAccount<MinterConfig>> = Vec::new();
+    let mut decoded_accounts: Vec<crate::shared::DecodedAccount<ProtocolConfig>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
         let account = accounts[i].as_ref().ok_or(std::io::Error::new(
             std::io::ErrorKind::Other,
             format!("Account not found: {}", address),
         ))?;
-        let data = MinterConfig::from_bytes(&account.data)?;
+        let data = ProtocolConfig::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
             account: account.clone(),
@@ -77,27 +82,27 @@ pub fn fetch_all_minter_config(
 }
 
 #[cfg(feature = "fetch")]
-pub fn fetch_maybe_minter_config(
+pub fn fetch_maybe_protocol_config(
     rpc: &solana_client::rpc_client::RpcClient,
     address: &solana_pubkey::Pubkey,
-) -> Result<crate::shared::MaybeAccount<MinterConfig>, std::io::Error> {
-    let accounts = fetch_all_maybe_minter_config(rpc, &[*address])?;
+) -> Result<crate::shared::MaybeAccount<ProtocolConfig>, std::io::Error> {
+    let accounts = fetch_all_maybe_protocol_config(rpc, &[*address])?;
     Ok(accounts[0].clone())
 }
 
 #[cfg(feature = "fetch")]
-pub fn fetch_all_maybe_minter_config(
+pub fn fetch_all_maybe_protocol_config(
     rpc: &solana_client::rpc_client::RpcClient,
     addresses: &[solana_pubkey::Pubkey],
-) -> Result<Vec<crate::shared::MaybeAccount<MinterConfig>>, std::io::Error> {
+) -> Result<Vec<crate::shared::MaybeAccount<ProtocolConfig>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-    let mut decoded_accounts: Vec<crate::shared::MaybeAccount<MinterConfig>> = Vec::new();
+    let mut decoded_accounts: Vec<crate::shared::MaybeAccount<ProtocolConfig>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
         if let Some(account) = accounts[i].as_ref() {
-            let data = MinterConfig::from_bytes(&account.data)?;
+            let data = ProtocolConfig::from_bytes(&account.data)?;
             decoded_accounts.push(crate::shared::MaybeAccount::Exists(
                 crate::shared::DecodedAccount {
                     address,
@@ -113,26 +118,26 @@ pub fn fetch_all_maybe_minter_config(
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountDeserialize for MinterConfig {
+impl anchor_lang::AccountDeserialize for ProtocolConfig {
     fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
         Ok(Self::deserialize(buf)?)
     }
 }
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::AccountSerialize for MinterConfig {}
+impl anchor_lang::AccountSerialize for ProtocolConfig {}
 
 #[cfg(feature = "anchor")]
-impl anchor_lang::Owner for MinterConfig {
+impl anchor_lang::Owner for ProtocolConfig {
     fn owner() -> Pubkey {
         crate::SOL_MIND_PROTOCOL_ID
     }
 }
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::IdlBuild for MinterConfig {}
+impl anchor_lang::IdlBuild for ProtocolConfig {}
 
 #[cfg(feature = "anchor-idl-build")]
-impl anchor_lang::Discriminator for MinterConfig {
+impl anchor_lang::Discriminator for ProtocolConfig {
     const DISCRIMINATOR: &[u8] = &[0; 8];
 }

@@ -63,7 +63,6 @@ export type ProjectConfig = {
   owner: Address;
   name: string;
   description: string;
-  treasury: Address;
   autthorities: Array<Address>;
   minterConfigCounter: bigint;
   bump: number;
@@ -74,7 +73,6 @@ export type ProjectConfigArgs = {
   owner: Address;
   name: string;
   description: string;
-  treasury: Address;
   autthorities: Array<Address>;
   minterConfigCounter: number | bigint;
   bump: number;
@@ -88,7 +86,6 @@ export function getProjectConfigEncoder(): Encoder<ProjectConfigArgs> {
       ['owner', getAddressEncoder()],
       ['name', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ['description', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ['treasury', getAddressEncoder()],
       ['autthorities', getArrayEncoder(getAddressEncoder())],
       ['minterConfigCounter', getU64Encoder()],
       ['bump', getU8Encoder()],
@@ -104,7 +101,6 @@ export function getProjectConfigDecoder(): Decoder<ProjectConfig> {
     ['owner', getAddressDecoder()],
     ['name', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['description', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ['treasury', getAddressDecoder()],
     ['autthorities', getArrayDecoder(getAddressDecoder())],
     ['minterConfigCounter', getU64Decoder()],
     ['bump', getU8Decoder()],

@@ -1,141 +1,156 @@
-use litesvm::{types::TransactionResult, LiteSVM};
-use sol_mind_protocol_client::generated::{
-    instructions::{CreateMinterConfigBuilder, InitializeProjectBuilder, MintAssetBuilder},
-    types::AssetsConfig,
-};
-use solana_pubkey::Pubkey;
+use litesvm::{LiteSVM, types::TransactionResult};
 use solana_sdk::signature::Keypair;
+use solana_pubkey::Pubkey;
+use sol_mind_protocol_client::generated::{
+    instructions::{
+        InitializeProtocolBuilder,
+        CreateProjectBuilder,
+        UpdateFeesBuilder,
+        UpdateSingleFeeBuilder,
+        ProjectFeesTransferBuilder,
+        ProtocolFeesTransferBuilder,
+    },
+    types::{FeesStructure, Fee, Operation},
+};
 use solana_sdk_ids::system_program::ID as SYSTEM_PROGRAM_ID;
 
 use crate::setup::accounts::AccountHelper;
 
-pub struct Instructions {
-    program_id: Pubkey,
-    owner: Pubkey,
-}
+pub struct Instructions;
 
 impl Instructions {
-    pub fn new(program_id: Pubkey, owner: Pubkey) -> Self {
-        Self { program_id, owner }
-    }
-
-    pub fn account_helper<'a>(&self, svm: &'a LiteSVM) -> AccountHelper<'a> {
-        AccountHelper::new(svm, self.program_id)
-    }
-
-    pub fn initialize_project(
-        &self,
+    pub fn initialize_protocol(
         svm: &mut LiteSVM,
+        program_id: &Pubkey,
+        admins: Vec<Pubkey>,
+        whitelist_transfer_addrs: Vec<Pubkey>,
+        fees: FeesStructure,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
+
+        let instruction = InitializeProtocolBuilder::new()
+            .payer(payer)
+            .protocol_config(protocol_config_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
+            .admins(admins)
+            .whitelist_transfer_addrs(whitelist_transfer_addrs)
+            .fees(fees)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn create_project(
+        svm: &mut LiteSVM,
+        program_id: &Pubkey,
         project_id: u64,
         name: String,
         description: String,
         owner: Pubkey,
-        treasury: Pubkey,
         authorities: Vec<Pubkey>,
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let account_helper = self.account_helper(svm);
-        let (project_config_pda, _) = account_helper.find_project_pda(owner, project_id);
+        let (project_config_pda, _) = AccountHelper::find_project_pda(program_id, &owner, project_id);
+        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
 
-        let instruction = InitializeProjectBuilder::new()
+        let instruction = CreateProjectBuilder::new()
             .owner(owner)
             .project_config(project_config_pda)
+            .protocol_config(protocol_config_pda)
             .system_program(SYSTEM_PROGRAM_ID)
             .project_id(project_id)
             .name(name)
             .description(description)
-            .treasury(treasury)
             .authorities(authorities)
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
 
-    pub fn create_minter_config(
-        &self,
+    pub fn update_fees(
         svm: &mut LiteSVM,
-        name: String,
-        mint_price: u64,
-        max_supply: u64,
-        assets_config: Option<AssetsConfig>,
-        plugins: Option<Vec<Vec<u8>>>,
-        uri: Option<String>,
-        project_id: u64,
+        program_id: &Pubkey,
+        fees: FeesStructure,
+        admin: Pubkey,
         payer: Pubkey,
-        authority: Pubkey,
-        collection: Option<Pubkey>,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let account_helper = self.account_helper(svm);
-        let (project_config_pda, _) = account_helper.find_project_pda(self.owner, project_id);
-        let (minter_config_pda, _) =
-            account_helper.find_next_minter_config_pda(self.owner, project_id);
+        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
 
-        let mut builder = CreateMinterConfigBuilder::new();
+        let instruction = UpdateFeesBuilder::new()
+            .admin(admin)
+            .protocol_config(protocol_config_pda)
+            .fees(fees)
+            .instruction();
 
-        builder
-            .name(name)
-            .mint_price(mint_price)
-            .max_supply(max_supply)
-            .payer(payer)
-            .authority(authority)
-            .collection(collection)
-            .minter_config(minter_config_pda)
-            .project_config(project_config_pda);
-
-        if let Some(assets_config) = assets_config {
-            builder.assets_config(assets_config);
-        }
-        if let Some(plugins) = plugins {
-            builder.plugins(plugins);
-        }
-        if let Some(uri) = uri {
-            builder.uri(uri);
-        }
-
-        utils::send_transaction(svm, &[builder.instruction()], &payer, signing_keypairs)
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
 
-    pub fn mint_asset(
-        &self,
+    pub fn update_single_fee(
         svm: &mut LiteSVM,
-        name: Option<String>,
-        uri: Option<String>,
-        plugins: Option<Vec<Vec<u8>>>,
-        project_id: u64,
+        program_id: &Pubkey,
+        operation: Operation,
+        fee: Fee,
+        admin: Pubkey,
         payer: Pubkey,
-        asset_owner: Pubkey,
-        mint: Pubkey,
-        authority: Pubkey,
-        collection: Option<Pubkey>,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let account_helper = self.account_helper(svm);
-        let (project_config_pda, _) = account_helper.find_project_pda(self.owner, project_id);
-        let (minter_config_pda, _) = account_helper.find_minter_config_pda(self.owner, project_id);
+        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
 
-        let mut builder = MintAssetBuilder::new();
+        let instruction = UpdateSingleFeeBuilder::new()
+            .admin(admin)
+            .protocol_config(protocol_config_pda)
+            .operation(operation)
+            .fee(fee)
+            .instruction();
 
-        builder
-            .payer(payer)
-            .owner(asset_owner)
-            .mint(mint)
-            .authority(authority)
-            .collection(collection)
-            .minter_config(minter_config_pda)
-            .project_config(project_config_pda);
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
 
-        if let Some(name) = name {
-            builder.name(name);
-        }
-        if let Some(uri) = uri {
-            builder.uri(uri);
-        }
-        if let Some(plugins) = plugins {
-            builder.plugins(plugins);
-        }
+    pub fn project_fees_transfer(
+        svm: &mut LiteSVM,
+        program_id: &Pubkey,
+        amount: u64,
+        owner: Pubkey,
+        to: Pubkey,
+        project_id: u64,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let (project_config_pda, _) = AccountHelper::find_project_pda(program_id, &owner, project_id);
 
-        utils::send_transaction(svm, &[builder.instruction()], &payer, signing_keypairs)
+        let instruction = ProjectFeesTransferBuilder::new()
+            .owner(owner)
+            .to(to)
+            .project_config(project_config_pda)
+            .amount(amount)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn protocol_fees_transfer(
+        svm: &mut LiteSVM,
+        program_id: &Pubkey,
+        amount: u64,
+        admin: Pubkey,
+        to: Pubkey,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
+
+        let instruction = ProtocolFeesTransferBuilder::new()
+            .admin(admin)
+            .to(to)
+            .protocol_config(protocol_config_pda)
+            .amount(amount)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
 }
+

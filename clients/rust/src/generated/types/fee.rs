@@ -5,12 +5,13 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use crate::generated::types::FeeType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct AssetsConfig {
-    pub asset_name_prefix: String,
-    pub asset_uri_prefix: String,
+pub struct Fee {
+    pub amount: u64,
+    pub fee_type: FeeType,
 }

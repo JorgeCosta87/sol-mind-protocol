@@ -1,7 +1,11 @@
-pub mod create_minter_config;
-pub mod initialize_project;
-pub mod mint_asset;
+pub mod create_project;
+pub mod initialize_protocol;
+pub mod update_fees;
+pub mod transfer_protocol_fees;
+pub mod transfer_project_fees;
 
-pub use create_minter_config::*;
-pub use initialize_project::*;
-pub use mint_asset::*;
+pub use create_project::*;
+pub use initialize_protocol::*;
+pub use update_fees::*;
+pub use transfer_protocol_fees::*;
+pub use transfer_project_fees::*;

@@ -1,76 +1,79 @@
-use anchor_lang::AnchorSerialize;
-use mpl_core::types::{Creator, Plugin, PluginAuthority, PluginAuthorityPair, Royalties};
-use solana_program::pubkey::Pubkey as ProgramPubkey;
+use solana_sdk::signature::Keypair;
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL,
-    signature::{Keypair, Signer},
+    signature::Signer,
 };
+use sol_mind_protocol_client::generated::types::{Fee, FeeType, Operation};
 
-use crate::setup::constants::*;
+use crate::setup::accounts::AccountHelper;
+use crate::setup::instructions::Instructions;
+use crate::setup::test_data::*;
 use crate::setup::TestFixture;
 
 #[test]
-fn test_initialize_project() {
+fn test_initialize_protocol() {
     let mut fixture = TestFixture::new();
-    let instructions = fixture.instructions();
+
+    let admins = vec![fixture.admin_1.pubkey()];
+    let whitelist_transfer_addrs = vec![fixture.admin_1.pubkey()];
+    let fees = default_fees_structure();
+
+    let result = Instructions::initialize_protocol(
+        &mut fixture.svm,
+        &fixture.program_id,
+        admins.clone(),
+        whitelist_transfer_addrs.clone(),
+        fees.clone(),
+        fixture.payer.pubkey(),
+        &[
+            &fixture.payer.insecure_clone()
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+
+            assert_eq!(protocol_config.admins, admins);
+            assert_eq!(protocol_config.whitelist_transfer_addrs, whitelist_transfer_addrs);
+            assert_eq!(protocol_config.fees.create_project.amount, fees.create_project.amount);
+            assert_eq!(protocol_config.fees.create_project.fee_type, fees.create_project.fee_type);
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_create_project() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol();
+
+    
+    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
     let project_name = "Test project".to_string();
     let project_description = "Project description".to_string();
 
-    let result = instructions.initialize_project(
+    let result = Instructions::create_project(
         &mut fixture.svm,
+        &fixture.program_id,
         PROJECT_1_ID,
-        project_name,
-        project_description,
-        fixture.owner.pubkey(),
-        fixture.treasury,
+        project_name.clone(),
+        project_description.clone(),
+        fixture.project_owner.pubkey(),
         vec![
             fixture.project_authority_1.pubkey(),
             fixture.project_authority_2.pubkey(),
         ],
-        fixture.owner.pubkey(),
-        &[&fixture.owner.insecure_clone()],
-    );
-
-    match result {
-        Ok(result) => {
-            utils::print_transaction_logs(&result);
-
-            let account_helper = fixture.account_helper();
-            let project_config =
-                account_helper.get_project_config(fixture.owner.pubkey(), PROJECT_1_ID);
-
-            assert_eq!(project_config.owner, fixture.owner.pubkey());
-            assert_eq!(project_config.treasury, fixture.treasury);
-            assert_eq!(project_config.minter_config_counter, 0);
-        }
-        Err(e) => {
-            panic!("Transaction failed: {:?}", e);
-        }
-    }
-}
-
-#[test]
-fn test_create_minter_config_without_collection() {
-    let mut fixture = TestFixture::new().with_initialize_project(PROJECT_1_ID);
-
-    let instructions = fixture.instructions();
-
-    let result = instructions.create_minter_config(
-        &mut fixture.svm,
-        MINTER_NAME.to_string(),
-        MINT_PRICE,
-        MAX_SUPPLY,
-        None,
-        None,
-        None,
-        PROJECT_1_ID,
         fixture.payer.pubkey(),
-        fixture.project_authority_1.pubkey(),
-        None,
         &[
-            &fixture.payer.insecure_clone(),
-            &fixture.project_authority_1.insecure_clone(),
+            &fixture.project_owner.insecure_clone(),
+            &fixture.payer.insecure_clone()
         ],
     );
 
@@ -78,305 +81,327 @@ fn test_create_minter_config_without_collection() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let account_helper = fixture.account_helper();
-            let project_config =
-                account_helper.get_project_config(fixture.owner.pubkey(), PROJECT_1_ID);
-            let minter_config =
-                account_helper.get_minter_config(fixture.owner.pubkey(), PROJECT_1_ID);
-
-            assert_eq!(project_config.minter_config_counter, 1);
-            assert_eq!(minter_config.collection, None);
-        }
-        Err(e) => {
-            panic!("Transaction failed: {:?}", e);
-        }
-    }
-}
-
-#[test]
-fn test_create_minter_config_with_unauthorized_authority() {
-    let mut fixture = TestFixture::new().with_initialize_project(PROJECT_1_ID);
-
-    let unauthorized_authority = Keypair::new();
-
-    fixture
-        .svm
-        .airdrop(&unauthorized_authority.pubkey(), 1 * LAMPORTS_PER_SOL)
-        .expect("Failed to fund unauthorized authority");
-
-    let instructions = fixture.instructions();
-
-    let result = instructions.create_minter_config(
-        &mut fixture.svm,
-        MINTER_NAME.to_string(),
-        MINT_PRICE,
-        MAX_SUPPLY,
-        None,
-        None,
-        None,
-        PROJECT_1_ID,
-        fixture.payer.pubkey(),
-        unauthorized_authority.pubkey(),
-        None,
-        &[
-            &fixture.payer.insecure_clone(),
-            &unauthorized_authority.insecure_clone(),
-        ],
-    );
-
-    assert!(
-        result.is_err(),
-        "Transaction should have failed with unauthorized authority, but it succeeded"
-    );
-
-    if let Err(e) = result {
-        println!("\nExpected transaction failure unauthorized authority:");
-        println!("Error: {:?}", e);
-    }
-}
-
-#[test]
-fn test_create_minter_config_with_collection() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_project(PROJECT_1_ID)
-        .with_metaplex_core_program();
-
-    let collection = Keypair::new();
-    let instructions = fixture.instructions();
-
-    let result = instructions.create_minter_config(
-        &mut fixture.svm,
-        MINTER_NAME.to_string(),
-        MINT_PRICE,
-        MAX_SUPPLY,
-        None,
-        None,
-        Some(COLLECTION_URI.to_string()),
-        PROJECT_1_ID,
-        fixture.payer.pubkey(),
-        fixture.project_authority_1.pubkey(),
-        Some(collection.pubkey()),
-        &[
-            &fixture.payer.insecure_clone(),
-            &collection.insecure_clone(),
-            &fixture.project_authority_1.insecure_clone(),
-        ],
-    );
-
-    match result {
-        Ok(result) => {
-            utils::print_transaction_logs(&result);
-
-            let account_helper = fixture.account_helper();
-            let project_config =
-                account_helper.get_project_config(fixture.owner.pubkey(), PROJECT_1_ID);
-            let minter_config =
-                account_helper.get_minter_config(fixture.owner.pubkey(), PROJECT_1_ID);
-
-            assert_eq!(project_config.minter_config_counter, 1);
-            assert_eq!(minter_config.collection.unwrap(), collection.pubkey());
-        }
-        Err(e) => {
-            println!("Transaction error: {:?}", e);
-            panic!("Transaction failed: {:?}", e);
-        }
-    }
-}
-
-#[test]
-fn test_create_minter_config_with_collection_with_plugins() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_project(PROJECT_1_ID)
-        .with_metaplex_core_program();
-
-    let collection = Keypair::new();
-    let instructions = fixture.instructions();
-
-    let royalties: Royalties = Royalties {
-        basis_points: 100,
-        creators: vec![Creator {
-            address: ProgramPubkey::from(fixture.treasury.to_bytes()),
-            percentage: 100,
-        }],
-        rule_set: mpl_core::types::RuleSet::None,
-    };
-
-    let plugin_authority = PluginAuthorityPair {
-        plugin: Plugin::Royalties(royalties),
-        authority: Some(PluginAuthority::None),
-    };
-
-    let plugins: Option<Vec<Vec<u8>>> = Some(
-        vec![plugin_authority]
-            .iter()
-            .map(|pair| {
-                let mut bytes = Vec::new();
-                pair.serialize(&mut bytes)
-                    .expect("Failed to serialize plugin");
-                bytes
-            })
-            .collect(),
-    );
-
-    let result = instructions.create_minter_config(
-        &mut fixture.svm,
-        MINTER_NAME.to_string(),
-        MINT_PRICE,
-        MAX_SUPPLY,
-        None,
-        plugins,
-        Some(COLLECTION_URI.to_string()),
-        PROJECT_1_ID,
-        fixture.payer.pubkey(),
-        fixture.project_authority_1.pubkey(),
-        Some(collection.pubkey()),
-        &[
-            &fixture.payer.insecure_clone(),
-            &collection.insecure_clone(),
-            &fixture.project_authority_1.insecure_clone(),
-        ],
-    );
-
-    match result {
-        Ok(result) => {
-            utils::print_transaction_logs(&result);
-
-            let account_helper = fixture.account_helper();
-            let project_config =
-                account_helper.get_project_config(fixture.owner.pubkey(), PROJECT_1_ID);
-            let minter_config =
-                account_helper.get_minter_config(fixture.owner.pubkey(), PROJECT_1_ID);
-            let asset = account_helper.get_collection(collection.pubkey());
-
-            println!("plugins: {:?}", asset.plugin_list);
-
-            assert_eq!(project_config.minter_config_counter, 1);
-            assert_eq!(minter_config.collection.unwrap(), collection.pubkey());
-            assert_ne!(asset.plugin_list.royalties, None);
-        }
-        Err(e) => {
-            println!("Transaction error: {:?}", e);
-            panic!("Transaction failed: {:?}", e);
-        }
-    }
-}
-
-#[test]
-fn test_mint_asset_without_assets_config_and_collection() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_project(PROJECT_1_ID)
-        .with_minter_config(PROJECT_1_ID, None)
-        .with_metaplex_core_program();
-
-    let asset_owner = Keypair::new();
-    let mint = Keypair::new();
-    let instructions = fixture.instructions();
-
-    let result = instructions.mint_asset(
-        &mut fixture.svm,
-        Some(ASSET_NAME.to_string()),
-        Some(ASSET_URI.to_string()),
-        None,
-        PROJECT_1_ID,
-        fixture.payer.pubkey(),
-        asset_owner.pubkey(),
-        mint.pubkey(),
-        fixture.project_authority_1.pubkey(),
-        None,
-        &[
-            &fixture.payer.insecure_clone(),
-            &asset_owner.insecure_clone(),
-            &fixture.project_authority_1.insecure_clone(),
-            &mint.insecure_clone(),
-        ],
-    );
-
-    match result {
-        Ok(result) => {
-            utils::print_transaction_logs(&result);
-
-            let account_helper = fixture.account_helper();
-            let project_config =
-                account_helper.get_project_config(fixture.owner.pubkey(), PROJECT_1_ID);
-            let minter_config =
-                account_helper.get_minter_config(fixture.owner.pubkey(), PROJECT_1_ID);
-
-            assert_eq!(project_config.minter_config_counter, 1);
-            assert_eq!(minter_config.collection, None);
-            assert_eq!(minter_config.mints_counter, 1);
-        }
-        Err(e) => {
-            println!("Transaction error: {:?}", e);
-            panic!("Transaction failed: {:?}", e);
-        }
-    }
-}
-
-#[test]
-fn test_mint_asset_with_collection() {
-    let collection = Keypair::new();
-
-    let mut fixture = TestFixture::new()
-        .with_metaplex_core_program()
-        .with_initialize_project(PROJECT_1_ID)
-        .with_minter_config(PROJECT_1_ID, Some(&collection));
-
-    let asset_owner = Keypair::new();
-    let mint = Keypair::new();
-    let instructions = fixture.instructions();
-
-    let result = instructions.mint_asset(
-        &mut fixture.svm,
-        Some(ASSET_NAME.to_string()),
-        Some(ASSET_URI.to_string()),
-        None,
-        PROJECT_1_ID,
-        fixture.payer.pubkey(),
-        asset_owner.pubkey(),
-        mint.pubkey(),
-        fixture.project_authority_1.pubkey(),
-        Some(collection.pubkey()),
-        &[
-            &fixture.payer.insecure_clone(),
-            &asset_owner.insecure_clone(),
-            &fixture.project_authority_1.insecure_clone(),
-            &mint.insecure_clone(),
-        ],
-    );
-
-    match result {
-        Ok(result) => {
-            utils::print_transaction_logs(&result);
-
-            let account_helper = fixture.account_helper();
-            let minter_config =
-                account_helper.get_minter_config(fixture.owner.pubkey(), PROJECT_1_ID);
-            let asset = account_helper.get_asset(mint.pubkey());
-
-            assert_eq!(minter_config.collection.unwrap(), collection.pubkey());
-            assert_eq!(minter_config.mints_counter, 1);
-            assert_eq!(
-                asset.base.owner.to_string(),
-                asset_owner.pubkey().to_string()
+            let project_config = AccountHelper::get_project_config(
+                &fixture.svm,
+                &fixture.program_id,
+                &fixture.project_owner.pubkey(),
+                PROJECT_1_ID,
             );
-            assert_eq!(asset.base.name.to_string(), ASSET_NAME.to_string());
-            assert_eq!(asset.base.uri.to_string(), ASSET_URI.to_string());
+            let protocol_config = AccountHelper::get_protocol_config(
+                &fixture.svm,
+                &fixture.program_id,
+            );
 
-            match &asset.base.update_authority {
-                mpl_core::types::UpdateAuthority::Collection(pubkey) => {
-                    println!("collection: {:?}", collection.pubkey());
-                    println!("update: {:?}", pubkey.to_string());
-                    assert_eq!(pubkey.to_string(), collection.pubkey().to_string());
-                }
-                _ => panic!(
-                    "Expected update_authority to be the collection, got {:?}",
-                    asset.base.update_authority
-                ),
-            }
+            let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+
+            assert_eq!(project_config.owner, fixture.project_owner.pubkey());
+            assert_eq!(project_config.name, project_name);
+            assert_eq!(project_config.description, project_description);
+            assert_eq!(project_config.minter_config_counter, 0);
+            assert_eq!(protocol_config.fees.create_project.amount, FEE_CREATE_PROJECT_AMOUNT);
+            assert_eq!(protocol_config.fees.mint_asset.amount, FEE_MINT_ASSET_AMOUNT);
+            assert_eq!(protocol_config.fees.create_minter_config.amount, FEE_CREATE_MINTER_CONFIG_AMOUNT);
+            assert_eq!(protocol_config.fees.generic_operation.amount, FEE_GENERIC_OPERATION_AMOUNT);
+            assert!(project_config.autthorities.contains(&fixture.project_authority_1.pubkey()), "Wrong authority added");
+            
+            assert_eq!(protocol_final_balance, protocol_initial_balance + protocol_config.fees.create_project.amount)
+        
         }
         Err(e) => {
-            println!("Transaction error: {:?}", e);
             panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_update_fees() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol();
+
+    let new_fees = sol_mind_protocol_client::generated::types::FeesStructure {
+        create_project: Fee {
+            amount: 2_000_000,
+            fee_type: FeeType::Fixed,
+        },
+        create_minter_config: Fee {
+            amount: 1_000_000,
+            fee_type: FeeType::Fixed,
+        },
+        mint_asset: Fee {
+            amount: 100_000,
+            fee_type: FeeType::Fixed,
+        },
+        generic_operation: Fee {
+            amount: 200_000,
+            fee_type: FeeType::Fixed,
+        },
+    };
+
+    let result = Instructions::update_fees(
+        &mut fixture.svm,
+        &fixture.program_id,
+        new_fees.clone(),
+        fixture.admin_1.pubkey(),
+        fixture.payer.pubkey(),
+        &[
+            &fixture.admin_1.insecure_clone(),
+            &fixture.payer.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+
+            assert_eq!(protocol_config.fees.create_project.amount, new_fees.create_project.amount);
+            assert_eq!(protocol_config.fees.create_minter_config.amount, new_fees.create_minter_config.amount);
+            assert_eq!(protocol_config.fees.mint_asset.amount, new_fees.mint_asset.amount);
+            assert_eq!(protocol_config.fees.generic_operation.amount, new_fees.generic_operation.amount);
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_update_single_fee() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol();
+
+    let new_fee = Fee {
+        amount: 3_000_000,
+        fee_type: FeeType::Fixed,
+    };
+
+    let result = Instructions::update_single_fee(
+        &mut fixture.svm,
+        &fixture.program_id,
+        Operation::CreateProject,
+        new_fee.clone(),
+        fixture.admin_1.pubkey(),
+        fixture.payer.pubkey(),
+        &[
+            &fixture.admin_1.insecure_clone(),
+            &fixture.payer.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+
+            assert_eq!(protocol_config.fees.create_project.amount, new_fee.amount);
+            assert_eq!(protocol_config.fees.create_project.fee_type, new_fee.fee_type);
+            assert_eq!(protocol_config.fees.mint_asset.amount, FEE_MINT_ASSET_AMOUNT);
+            assert_eq!(protocol_config.fees.create_minter_config.amount, FEE_CREATE_MINTER_CONFIG_AMOUNT);
+            assert_eq!(protocol_config.fees.generic_operation.amount, FEE_GENERIC_OPERATION_AMOUNT);
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_protocol_fees_transfer() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol();
+
+    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    fixture.svm
+        .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund protocol config");
+
+    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+
+    let transfer_amount = 1 * LAMPORTS_PER_SOL;
+    let destination = fixture.admin_2.pubkey();
+
+    let result = Instructions::protocol_fees_transfer(
+        &mut fixture.svm,
+        &fixture.program_id,
+        transfer_amount,
+        fixture.admin_1.pubkey(),
+        destination,
+        fixture.payer.pubkey(),
+        &[
+            &fixture.payer.insecure_clone(),
+            &fixture.admin_1.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let destination_final_balance = utils::get_lamports(&fixture.svm, &destination);
+
+            assert_eq!(final_balance, initial_balance - transfer_amount);
+            assert_eq!(destination_final_balance, transfer_amount);
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_protocol_fees_transfer_to_non_whitelisted_address() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol();
+
+    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    fixture.svm
+        .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund protocol config");
+
+    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+
+    let transfer_amount = 1 * LAMPORTS_PER_SOL;
+    let destination = Keypair::new().pubkey();
+
+    let result = Instructions::protocol_fees_transfer(
+        &mut fixture.svm,
+        &fixture.program_id,
+        transfer_amount,
+        fixture.admin_1.pubkey(),
+        destination,
+        fixture.payer.pubkey(),
+        &[
+            &fixture.payer.insecure_clone(),
+            &fixture.admin_1.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(_) => {
+            panic!("Transaction should have failed - destination is not whitelisted");
+        }
+        Err(e) => {
+            let error_string = format!("{:?}", e);
+            assert!(
+                error_string.contains("AddressNotWhiteListed"),
+                "Expected AddressNotWhiteListed error, got: {:?}",
+                e
+            );
+
+            let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            assert_eq!(final_balance, initial_balance, "Balance should not change on failed transfer");
+        }
+    }
+}
+
+#[test]
+fn test_project_fees_transfer() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol()
+        .with_project_created(PROJECT_1_ID);
+
+    let (project_config_pda, _) = AccountHelper::find_project_pda(
+        &fixture.program_id,
+        &fixture.project_owner.pubkey(),
+        PROJECT_1_ID,
+    );
+    
+    fixture.svm
+        .airdrop(&project_config_pda, 3 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund project config");
+
+    let initial_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+
+    let transfer_amount = 1 * LAMPORTS_PER_SOL;
+    let destination = fixture.project_authority_1.pubkey();
+
+    let result = Instructions::project_fees_transfer(
+        &mut fixture.svm,
+        &fixture.program_id,
+        transfer_amount,
+        fixture.project_owner.pubkey(),
+        destination,
+        PROJECT_1_ID,
+        fixture.payer.pubkey(),
+        &[
+            &fixture.project_owner.insecure_clone(),
+            &fixture.payer.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let final_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+            let destination_final_balance = utils::get_lamports(&fixture.svm, &destination);
+
+            assert_eq!(final_balance, initial_balance - transfer_amount);
+            assert_eq!(destination_final_balance, transfer_amount);
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_project_fees_transfer_by_non_owner() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol()
+        .with_project_created(PROJECT_1_ID);
+
+    let (project_config_pda, _) = AccountHelper::find_project_pda(
+        &fixture.program_id,
+        &fixture.project_owner.pubkey(),
+        PROJECT_1_ID,
+    );
+    
+    fixture.svm
+        .airdrop(&project_config_pda, 3 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund project config");
+
+    let initial_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+
+    let transfer_amount = 1 * LAMPORTS_PER_SOL;
+
+
+    let non_owner = Keypair::new();
+    fixture.svm
+        .airdrop(&non_owner.pubkey(), 3 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund project config");
+
+    let result = Instructions::project_fees_transfer(
+        &mut fixture.svm,
+        &fixture.program_id,
+        transfer_amount,
+        non_owner.pubkey(),
+        fixture.project_authority_1.pubkey(),
+        PROJECT_1_ID,
+        fixture.payer.pubkey(),
+        &[
+            &non_owner.insecure_clone(),
+            &fixture.payer.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(_) => {
+            panic!("Transaction should have failed - non-owner cannot transfer from project");
+        }
+        Err(e) => {
+            let error_string = format!("{:?}", e);
+            assert!(
+                error_string.contains("AccountNotInitialized."),
+                "Expected AccountNotInitialized, since the PDA seed has the owner, got: {:?}",
+                e
+            );
+
+            let final_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+            assert_eq!(final_balance, initial_balance, "Balance should not change on failed transfer");
         }
     }
 }

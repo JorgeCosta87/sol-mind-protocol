@@ -9,7 +9,6 @@ pub struct ProjectConfig {
     pub name: String,
     #[max_len(200)]
     pub description: String,
-    pub treasury: Pubkey,
     #[max_len(3)]
     pub autthorities: Vec<Pubkey>,
     pub minter_config_counter: u64,

@@ -57,3 +57,9 @@ pub fn send_transaction(
     );
     svm.send_transaction(tx)
 }
+
+pub fn get_lamports(svm: &LiteSVM, address: &Pubkey) -> u64 {
+    svm.get_account(address)
+        .unwrap_or_else(|| panic!("Account not found: {}", address))
+        .lamports
+}

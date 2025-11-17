@@ -6,5 +6,5 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './minterConfig';
 export * from './projectConfig';
+export * from './protocolConfig';

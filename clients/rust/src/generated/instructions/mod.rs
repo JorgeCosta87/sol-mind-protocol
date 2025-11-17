@@ -5,10 +5,16 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-pub(crate) mod r#create_minter_config;
-pub(crate) mod r#initialize_project;
-pub(crate) mod r#mint_asset;
+pub(crate) mod r#create_project;
+pub(crate) mod r#initialize_protocol;
+pub(crate) mod r#project_fees_transfer;
+pub(crate) mod r#protocol_fees_transfer;
+pub(crate) mod r#update_fees;
+pub(crate) mod r#update_single_fee;
 
-pub use self::r#create_minter_config::*;
-pub use self::r#initialize_project::*;
-pub use self::r#mint_asset::*;
+pub use self::r#create_project::*;
+pub use self::r#initialize_protocol::*;
+pub use self::r#project_fees_transfer::*;
+pub use self::r#protocol_fees_transfer::*;
+pub use self::r#update_fees::*;
+pub use self::r#update_single_fee::*;

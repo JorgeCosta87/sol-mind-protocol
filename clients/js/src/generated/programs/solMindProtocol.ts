@@ -14,34 +14,26 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit';
 import {
-  type ParsedCreateMinterConfigInstruction,
-  type ParsedInitializeProjectInstruction,
-  type ParsedMintAssetInstruction,
+  type ParsedCreateProjectInstruction,
+  type ParsedInitializeProtocolInstruction,
+  type ParsedProjectFeesTransferInstruction,
+  type ParsedProtocolFeesTransferInstruction,
+  type ParsedUpdateFeesInstruction,
+  type ParsedUpdateSingleFeeInstruction,
 } from '../instructions';
 
 export const SOL_MIND_PROTOCOL_PROGRAM_ADDRESS =
   'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24' as Address<'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24'>;
 
 export enum SolMindProtocolAccount {
-  MinterConfig,
   ProjectConfig,
+  ProtocolConfig,
 }
 
 export function identifySolMindProtocolAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
 ): SolMindProtocolAccount {
   const data = 'data' in account ? account.data : account;
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([78, 211, 23, 6, 233, 19, 19, 236])
-      ),
-      0
-    )
-  ) {
-    return SolMindProtocolAccount.MinterConfig;
-  }
   if (
     containsBytes(
       data,
@@ -53,15 +45,29 @@ export function identifySolMindProtocolAccount(
   ) {
     return SolMindProtocolAccount.ProjectConfig;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([207, 91, 250, 28, 152, 179, 215, 209])
+      ),
+      0
+    )
+  ) {
+    return SolMindProtocolAccount.ProtocolConfig;
+  }
   throw new Error(
     'The provided account could not be identified as a solMindProtocol account.'
   );
 }
 
 export enum SolMindProtocolInstruction {
-  CreateMinterConfig,
-  InitializeProject,
-  MintAsset,
+  CreateProject,
+  InitializeProtocol,
+  ProjectFeesTransfer,
+  ProtocolFeesTransfer,
+  UpdateFees,
+  UpdateSingleFee,
 }
 
 export function identifySolMindProtocolInstruction(
@@ -72,34 +78,67 @@ export function identifySolMindProtocolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([41, 145, 106, 217, 232, 35, 245, 155])
+        new Uint8Array([148, 219, 181, 42, 221, 114, 145, 190])
       ),
       0
     )
   ) {
-    return SolMindProtocolInstruction.CreateMinterConfig;
+    return SolMindProtocolInstruction.CreateProject;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([69, 126, 215, 37, 20, 60, 73, 235])
+        new Uint8Array([188, 233, 252, 106, 134, 146, 202, 91])
       ),
       0
     )
   ) {
-    return SolMindProtocolInstruction.InitializeProject;
+    return SolMindProtocolInstruction.InitializeProtocol;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([84, 175, 211, 156, 56, 250, 104, 118])
+        new Uint8Array([70, 183, 235, 85, 167, 67, 132, 76])
       ),
       0
     )
   ) {
-    return SolMindProtocolInstruction.MintAsset;
+    return SolMindProtocolInstruction.ProjectFeesTransfer;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([237, 152, 50, 99, 40, 3, 134, 37])
+      ),
+      0
+    )
+  ) {
+    return SolMindProtocolInstruction.ProtocolFeesTransfer;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([225, 27, 13, 6, 69, 84, 172, 191])
+      ),
+      0
+    )
+  ) {
+    return SolMindProtocolInstruction.UpdateFees;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([163, 75, 159, 234, 109, 175, 83, 87])
+      ),
+      0
+    )
+  ) {
+    return SolMindProtocolInstruction.UpdateSingleFee;
   }
   throw new Error(
     'The provided instruction could not be identified as a solMindProtocol instruction.'
@@ -110,11 +149,20 @@ export type ParsedSolMindProtocolInstruction<
   TProgram extends string = 'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24',
 > =
   | ({
-      instructionType: SolMindProtocolInstruction.CreateMinterConfig;
-    } & ParsedCreateMinterConfigInstruction<TProgram>)
+      instructionType: SolMindProtocolInstruction.CreateProject;
+    } & ParsedCreateProjectInstruction<TProgram>)
   | ({
-      instructionType: SolMindProtocolInstruction.InitializeProject;
-    } & ParsedInitializeProjectInstruction<TProgram>)
+      instructionType: SolMindProtocolInstruction.InitializeProtocol;
+    } & ParsedInitializeProtocolInstruction<TProgram>)
   | ({
-      instructionType: SolMindProtocolInstruction.MintAsset;
-    } & ParsedMintAssetInstruction<TProgram>);
+      instructionType: SolMindProtocolInstruction.ProjectFeesTransfer;
+    } & ParsedProjectFeesTransferInstruction<TProgram>)
+  | ({
+      instructionType: SolMindProtocolInstruction.ProtocolFeesTransfer;
+    } & ParsedProtocolFeesTransferInstruction<TProgram>)
+  | ({
+      instructionType: SolMindProtocolInstruction.UpdateFees;
+    } & ParsedUpdateFeesInstruction<TProgram>)
+  | ({
+      instructionType: SolMindProtocolInstruction.UpdateSingleFee;
+    } & ParsedUpdateSingleFeeInstruction<TProgram>);

@@ -1,2 +1,4 @@
 pub mod setup;
-pub mod tests;
+mod tests;
+
+pub use setup::fixture::*;
