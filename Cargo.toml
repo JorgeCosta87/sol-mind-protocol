@@ -1,6 +1,8 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/sol-mind-protocol",
+    "programs/token-manager",
+    "programs/marketplace"
 ]
 resolver = "2"
 
@@ -23,8 +25,12 @@ version = "0.1.0"
 edition = "2021"
 
 [[test]]
-name = "litesvm-tests"
-path = "tests/sol-mind-protocol/mod.rs"
+name = "sol-mind-protocol"
+path = "tests/sol-mind-protocol.rs"
+
+[[test]]
+name = "token-manager"
+path = "tests/token-manager.rs"
 
 [dev-dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }

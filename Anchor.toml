@@ -7,6 +7,8 @@ skip-lint = false
 
 [programs.localnet]
 sol_mind_protocol = "EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24"
+token_manager = "DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ"
+marketplace = "EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,4 +19,6 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "cargo test -- --show-output"
-generate = "npx codama run --all"
+test-sol-mind-protocol = "anchor test --program-name sol_mind_protocol"
+test-token-manager = "anchor test --program-name token_manager"
+generate = "bash scripts/generate-clients.sh"

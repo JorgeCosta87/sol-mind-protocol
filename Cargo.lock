@@ -1766,6 +1766,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
+name = "marketplace"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang 0.32.1",
+ "mpl-core",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5426,6 +5434,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
+name = "token-manager"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang 0.32.1",
+ "mpl-core",
+ "sol-mind-protocol",
+]
+
+[[package]]
 name = "toml"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5557,6 +5574,8 @@ name = "utils"
 version = "0.1.0"
 dependencies = [
  "litesvm",
+ "mpl-core",
+ "solana-pubkey 4.0.0",
  "solana-sdk",
 ]
 
