@@ -43,9 +43,9 @@ impl<'info> CreateProject<'info> {
         pay_protocol_fee(
             &self.owner,
             &self.protocol_config,
+            &self.system_program,
             Operation::CreateProject,
             None,
-            &self.system_program,
         )?;
 
         self.project_config.set_inner(ProjectConfig {
@@ -53,7 +53,6 @@ impl<'info> CreateProject<'info> {
             owner: self.owner.key(),
             name,
             description,
-            minter_config_counter: 0,
             autthorities: authorities,
             bump,
         });

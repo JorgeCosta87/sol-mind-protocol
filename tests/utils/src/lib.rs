@@ -1,14 +1,17 @@
+pub mod mpl;
+
 use litesvm::{
     types::{TransactionMetadata, TransactionResult},
     LiteSVM,
 };
 use solana_sdk::{
     instruction::Instruction,
-    lamports,
     pubkey::Pubkey,
     signature::{read_keypair_file, Keypair, Signer},
     transaction::Transaction,
 };
+
+pub use mpl::MplUtils;
 
 pub fn deploy_program_from_keypair(svm: &mut LiteSVM, keypair_path: &str, so_path: &str) -> Pubkey {
     let program_keypair = read_keypair_file(keypair_path).expect("Failed to read keypair file");

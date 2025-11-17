@@ -1,5 +1,9 @@
 use litesvm::{types::TransactionResult, LiteSVM};
-use sol_mind_protocol_client::generated::{
+use sol_mind_protocol_client::token_manager::{
+    instructions::{CreateMinterConfigBuilder, MintAssetBuilder},
+    types::AssetsConfig,
+};
+use sol_mind_protocol_client::{
     instructions::{
         CreateProjectBuilder, InitializeProtocolBuilder, ProjectFeesTransferBuilder,
         ProtocolFeesTransferBuilder, UpdateFeesBuilder, UpdateSingleFeeBuilder,
@@ -10,11 +14,12 @@ use solana_pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk_ids::system_program::ID as SYSTEM_PROGRAM_ID;
 
-use crate::setup::accounts::AccountHelper;
+use super::accounts::AccountHelper;
 
 pub struct Instructions;
 
 impl Instructions {
+    // Sol-mind-protocol instructions
     pub fn initialize_protocol(
         svm: &mut LiteSVM,
         program_id: &Pubkey,
@@ -149,5 +154,107 @@ impl Instructions {
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn create_minter_config(
+        svm: &mut LiteSVM,
+        token_manager_program_id: &Pubkey,
+        sol_mind_protocol_program_id: &Pubkey,
+        name: String,
+        mint_price: u64,
+        max_supply: u64,
+        assets_config: Option<AssetsConfig>,
+        plugins: Option<Vec<Vec<u8>>>,
+        uri: Option<String>,
+        project_id: u64,
+        owner: Pubkey,
+        payer: Pubkey,
+        authority: Pubkey,
+        collection: Option<Pubkey>,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let (protocol_config_pda, _) =
+            AccountHelper::find_protocol_config_pda(sol_mind_protocol_program_id);
+        let (project_config_pda, _) =
+            AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id);
+        let (minter_config_pda, _) =
+            AccountHelper::find_minter_config_pda(token_manager_program_id, project_id, &name);
+
+        let mut builder = CreateMinterConfigBuilder::new();
+
+        builder
+            .name(name)
+            .mint_price(mint_price)
+            .max_supply(max_supply)
+            .payer(payer)
+            .authority(authority)
+            .collection(collection)
+            .minter_config(minter_config_pda)
+            .project_config(project_config_pda)
+            .protocol_config(protocol_config_pda);
+
+        if let Some(assets_config) = assets_config {
+            builder.assets_config(assets_config);
+        }
+        if let Some(plugins) = plugins {
+            builder.plugins(plugins);
+        }
+        if let Some(uri) = uri {
+            builder.uri(uri);
+        }
+
+        utils::send_transaction(svm, &[builder.instruction()], &payer, signing_keypairs)
+    }
+
+    pub fn mint_asset(
+        svm: &mut LiteSVM,
+        token_manager_program_id: &Pubkey,
+        sol_mind_protocol_program_id: &Pubkey,
+        minter_config_name: &str,
+        name: Option<String>,
+        uri: Option<String>,
+        plugins: Option<Vec<Vec<u8>>>,
+        project_id: u64,
+        owner: Pubkey,
+        payer: Pubkey,
+        asset_owner: Pubkey,
+        mint: Pubkey,
+        authority: Pubkey,
+        collection: Option<Pubkey>,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let (protocol_config_pda, _) =
+            AccountHelper::find_protocol_config_pda(sol_mind_protocol_program_id);
+        let (project_config_pda, _) =
+            AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id);
+        let (minter_config_pda, _) = AccountHelper::find_minter_config_pda(
+            token_manager_program_id,
+            project_id,
+            minter_config_name,
+        );
+
+        let mut builder = MintAssetBuilder::new();
+
+        builder
+            .payer(payer)
+            .owner(asset_owner)
+            .mint(mint)
+            .authority(authority)
+            .collection(collection)
+            .minter_config(minter_config_pda)
+            .project_config(project_config_pda)
+            .protocol_config(protocol_config_pda);
+
+        if let Some(name) = name {
+            builder.name(name);
+        }
+        if let Some(uri) = uri {
+            builder.uri(uri);
+        }
+        if let Some(plugins) = plugins {
+            builder.plugins(plugins);
+        }
+
+        utils::send_transaction(svm, &[builder.instruction()], &payer, signing_keypairs)
     }
 }

@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 litesvm = "0.8.1"
 solana-sdk = "3.0.0"
+solana-pubkey = "4.0.0"
+mpl-core = { version = "0.11.1", features = ["anchor"] }

@@ -1,11 +1,11 @@
-use sol_mind_protocol_client::generated::types::{Fee, FeeType, Operation};
+mod setup;
+
+use sol_mind_protocol_client::types::{Fee, FeeType, FeesStructure, Operation};
 use solana_sdk::signature::Keypair;
 use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Signer};
 
-use crate::setup::accounts::AccountHelper;
-use crate::setup::instructions::Instructions;
 use crate::setup::test_data::*;
-use crate::setup::TestFixture;
+use setup::{AccountHelper, Instructions, TestFixture};
 
 #[test]
 fn test_initialize_protocol() {
@@ -17,7 +17,7 @@ fn test_initialize_protocol() {
 
     let result = Instructions::initialize_protocol(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         admins.clone(),
         whitelist_transfer_addrs.clone(),
         fees.clone(),
@@ -30,7 +30,7 @@ fn test_initialize_protocol() {
             utils::print_transaction_logs(&result);
 
             let protocol_config =
-                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
 
             assert_eq!(protocol_config.admins, admins);
             assert_eq!(
@@ -56,7 +56,8 @@ fn test_initialize_protocol() {
 fn test_create_project() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
-    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    let (protocol_config_pda, _) =
+        AccountHelper::find_protocol_config_pda(&fixture.program_id_sol_mind);
     let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
     let project_name = "Test project".to_string();
@@ -68,7 +69,7 @@ fn test_create_project() {
 
     let result = Instructions::create_project(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         PROJECT_1_ID,
         project_name.clone(),
         project_description.clone(),
@@ -87,19 +88,18 @@ fn test_create_project() {
 
             let project_config = AccountHelper::get_project_config(
                 &fixture.svm,
-                &fixture.program_id,
+                &fixture.program_id_sol_mind,
                 &fixture.project_owner.pubkey(),
                 PROJECT_1_ID,
             );
             let protocol_config =
-                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
 
             let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
             assert_eq!(project_config.owner, fixture.project_owner.pubkey());
             assert_eq!(project_config.name, project_name);
             assert_eq!(project_config.description, project_description);
-            assert_eq!(project_config.minter_config_counter, 0);
             assert_eq!(
                 protocol_config.fees.create_project.amount,
                 FEE_CREATE_PROJECT_AMOUNT
@@ -133,7 +133,7 @@ fn test_create_project() {
 fn test_update_fees() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
-    let new_fees = sol_mind_protocol_client::generated::types::FeesStructure {
+    let new_fees = FeesStructure {
         create_project: Fee {
             amount: 2_000_000,
             fee_type: FeeType::Fixed,
@@ -154,7 +154,7 @@ fn test_update_fees() {
 
     let result = Instructions::update_fees(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         new_fees.clone(),
         fixture.admin_1.pubkey(),
         fixture.payer.pubkey(),
@@ -169,7 +169,7 @@ fn test_update_fees() {
             utils::print_transaction_logs(&result);
 
             let protocol_config =
-                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
 
             assert_eq!(
                 protocol_config.fees.create_project.amount,
@@ -205,7 +205,7 @@ fn test_update_single_fee() {
 
     let result = Instructions::update_single_fee(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         Operation::CreateProject,
         new_fee.clone(),
         fixture.admin_1.pubkey(),
@@ -221,7 +221,7 @@ fn test_update_single_fee() {
             utils::print_transaction_logs(&result);
 
             let protocol_config =
-                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
 
             assert_eq!(protocol_config.fees.create_project.amount, new_fee.amount);
             assert_eq!(
@@ -251,7 +251,8 @@ fn test_update_single_fee() {
 fn test_protocol_fees_transfer() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
-    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    let (protocol_config_pda, _) =
+        AccountHelper::find_protocol_config_pda(&fixture.program_id_sol_mind);
     fixture
         .svm
         .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
@@ -264,7 +265,7 @@ fn test_protocol_fees_transfer() {
 
     let result = Instructions::protocol_fees_transfer(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         transfer_amount,
         fixture.admin_1.pubkey(),
         destination,
@@ -295,7 +296,8 @@ fn test_protocol_fees_transfer() {
 fn test_protocol_fees_transfer_non_admin() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
-    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    let (protocol_config_pda, _) =
+        AccountHelper::find_protocol_config_pda(&fixture.program_id_sol_mind);
     fixture
         .svm
         .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
@@ -309,7 +311,7 @@ fn test_protocol_fees_transfer_non_admin() {
 
     let result = Instructions::protocol_fees_transfer(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         transfer_amount,
         non_admin.pubkey(),
         destination,
@@ -342,7 +344,8 @@ fn test_protocol_fees_transfer_non_admin() {
 fn test_protocol_fees_transfer_to_non_whitelisted_address() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
-    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
+    let (protocol_config_pda, _) =
+        AccountHelper::find_protocol_config_pda(&fixture.program_id_sol_mind);
     fixture
         .svm
         .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
@@ -355,7 +358,7 @@ fn test_protocol_fees_transfer_to_non_whitelisted_address() {
 
     let result = Instructions::protocol_fees_transfer(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         transfer_amount,
         fixture.admin_1.pubkey(),
         destination,
@@ -394,7 +397,7 @@ fn test_project_fees_transfer() {
         .with_project_created(PROJECT_1_ID);
 
     let (project_config_pda, _) = AccountHelper::find_project_pda(
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         &fixture.project_owner.pubkey(),
         PROJECT_1_ID,
     );
@@ -411,7 +414,7 @@ fn test_project_fees_transfer() {
 
     let result = Instructions::project_fees_transfer(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         transfer_amount,
         fixture.project_owner.pubkey(),
         destination,
@@ -446,7 +449,7 @@ fn test_project_fees_transfer_by_non_owner() {
         .with_project_created(PROJECT_1_ID);
 
     let (project_config_pda, _) = AccountHelper::find_project_pda(
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         &fixture.project_owner.pubkey(),
         PROJECT_1_ID,
     );
@@ -464,7 +467,7 @@ fn test_project_fees_transfer_by_non_owner() {
 
     let result = Instructions::project_fees_transfer(
         &mut fixture.svm,
-        &fixture.program_id,
+        &fixture.program_id_sol_mind,
         transfer_amount,
         non_owner.pubkey(),
         destination,
