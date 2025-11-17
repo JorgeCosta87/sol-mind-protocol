@@ -32,7 +32,7 @@ impl<'info> ProtocolFeesTransfer<'info> {
         let remaining_balance = current_balance
             .checked_sub(amount)
             .ok_or(ProtocolError::InsufficientFunds)?;
-        
+
         require!(
             remaining_balance >= rent_exempt,
             ProtocolError::MinimumBalanceRequired

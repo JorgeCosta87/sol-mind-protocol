@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
-use crate::ProjectConfig;
 use crate::errors::ProtocolError;
+use crate::ProjectConfig;
 
 #[derive(Accounts)]
 pub struct TransferProjectFees<'info> {
@@ -30,7 +30,7 @@ impl<'info> TransferProjectFees<'info> {
         let remaining_balance = current_balance
             .checked_sub(amount)
             .ok_or(ProtocolError::InsufficientFunds)?;
-        
+
         require!(
             remaining_balance >= rent_exempt,
             ProtocolError::MinimumBalanceRequired

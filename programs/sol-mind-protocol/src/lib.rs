@@ -56,17 +56,11 @@ pub mod sol_mind_protocol {
         )
     }
 
-    pub fn project_fees_transfer(
-        ctx: Context<TransferProjectFees>,
-        amount: u64,
-    ) -> Result<()> {
+    pub fn project_fees_transfer(ctx: Context<TransferProjectFees>, amount: u64) -> Result<()> {
         ctx.accounts.transfer_project_fees(amount)
     }
 
-    pub fn protocol_fees_transfer(
-        ctx: Context<ProtocolFeesTransfer>,
-        amount: u64,
-    ) -> Result<()> {
+    pub fn protocol_fees_transfer(ctx: Context<ProtocolFeesTransfer>, amount: u64) -> Result<()> {
         ctx.accounts.transfer_protocol_fees(amount)
     }
 }

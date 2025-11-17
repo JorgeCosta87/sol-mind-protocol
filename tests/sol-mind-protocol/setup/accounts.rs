@@ -1,5 +1,5 @@
 use litesvm::LiteSVM;
-use sol_mind_protocol_client::generated::accounts::{ProtocolConfig, ProjectConfig};
+use sol_mind_protocol_client::generated::accounts::{ProjectConfig, ProtocolConfig};
 use solana_pubkey::Pubkey;
 
 pub struct AccountHelper;

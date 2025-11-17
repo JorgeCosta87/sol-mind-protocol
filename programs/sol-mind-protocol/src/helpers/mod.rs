@@ -24,4 +24,3 @@ pub fn pay_protocol_fee<'info>(
 
     Ok(())
 }
-

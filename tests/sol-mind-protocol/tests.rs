@@ -1,9 +1,6 @@
-use solana_sdk::signature::Keypair;
-use solana_sdk::{
-    native_token::LAMPORTS_PER_SOL,
-    signature::Signer,
-};
 use sol_mind_protocol_client::generated::types::{Fee, FeeType, Operation};
+use solana_sdk::signature::Keypair;
+use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Signer};
 
 use crate::setup::accounts::AccountHelper;
 use crate::setup::instructions::Instructions;
@@ -25,21 +22,29 @@ fn test_initialize_protocol() {
         whitelist_transfer_addrs.clone(),
         fees.clone(),
         fixture.payer.pubkey(),
-        &[
-            &fixture.payer.insecure_clone()
-        ],
+        &[&fixture.payer.insecure_clone()],
     );
 
     match result {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+            let protocol_config =
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
 
             assert_eq!(protocol_config.admins, admins);
-            assert_eq!(protocol_config.whitelist_transfer_addrs, whitelist_transfer_addrs);
-            assert_eq!(protocol_config.fees.create_project.amount, fees.create_project.amount);
-            assert_eq!(protocol_config.fees.create_project.fee_type, fees.create_project.fee_type);
+            assert_eq!(
+                protocol_config.whitelist_transfer_addrs,
+                whitelist_transfer_addrs
+            );
+            assert_eq!(
+                protocol_config.fees.create_project.amount,
+                fees.create_project.amount
+            );
+            assert_eq!(
+                protocol_config.fees.create_project.fee_type,
+                fees.create_project.fee_type
+            );
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);
@@ -49,10 +54,8 @@ fn test_initialize_protocol() {
 
 #[test]
 fn test_create_project() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_protocol();
+    let mut fixture = TestFixture::new().with_initialize_protocol();
 
-    
     let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
     let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
@@ -74,7 +77,7 @@ fn test_create_project() {
         fixture.payer.pubkey(),
         &[
             &fixture.project_owner.insecure_clone(),
-            &fixture.payer.insecure_clone()
+            &fixture.payer.insecure_clone(),
         ],
     );
 
@@ -88,10 +91,8 @@ fn test_create_project() {
                 &fixture.project_owner.pubkey(),
                 PROJECT_1_ID,
             );
-            let protocol_config = AccountHelper::get_protocol_config(
-                &fixture.svm,
-                &fixture.program_id,
-            );
+            let protocol_config =
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
 
             let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
@@ -99,14 +100,28 @@ fn test_create_project() {
             assert_eq!(project_config.name, project_name);
             assert_eq!(project_config.description, project_description);
             assert_eq!(project_config.minter_config_counter, 0);
-            assert_eq!(protocol_config.fees.create_project.amount, FEE_CREATE_PROJECT_AMOUNT);
-            assert_eq!(protocol_config.fees.mint_asset.amount, FEE_MINT_ASSET_AMOUNT);
-            assert_eq!(protocol_config.fees.create_minter_config.amount, FEE_CREATE_MINTER_CONFIG_AMOUNT);
-            assert_eq!(protocol_config.fees.generic_operation.amount, FEE_GENERIC_OPERATION_AMOUNT);
+            assert_eq!(
+                protocol_config.fees.create_project.amount,
+                FEE_CREATE_PROJECT_AMOUNT
+            );
+            assert_eq!(
+                protocol_config.fees.mint_asset.amount,
+                FEE_MINT_ASSET_AMOUNT
+            );
+            assert_eq!(
+                protocol_config.fees.create_minter_config.amount,
+                FEE_CREATE_MINTER_CONFIG_AMOUNT
+            );
+            assert_eq!(
+                protocol_config.fees.generic_operation.amount,
+                FEE_GENERIC_OPERATION_AMOUNT
+            );
             assert_eq!(project_config.autthorities, authorities);
-            
-            assert_eq!(protocol_final_balance, protocol_initial_balance + protocol_config.fees.create_project.amount)
-        
+
+            assert_eq!(
+                protocol_final_balance,
+                protocol_initial_balance + protocol_config.fees.create_project.amount
+            )
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);
@@ -116,8 +131,7 @@ fn test_create_project() {
 
 #[test]
 fn test_update_fees() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_protocol();
+    let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let new_fees = sol_mind_protocol_client::generated::types::FeesStructure {
         create_project: Fee {
@@ -154,12 +168,25 @@ fn test_update_fees() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+            let protocol_config =
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
 
-            assert_eq!(protocol_config.fees.create_project.amount, new_fees.create_project.amount);
-            assert_eq!(protocol_config.fees.create_minter_config.amount, new_fees.create_minter_config.amount);
-            assert_eq!(protocol_config.fees.mint_asset.amount, new_fees.mint_asset.amount);
-            assert_eq!(protocol_config.fees.generic_operation.amount, new_fees.generic_operation.amount);
+            assert_eq!(
+                protocol_config.fees.create_project.amount,
+                new_fees.create_project.amount
+            );
+            assert_eq!(
+                protocol_config.fees.create_minter_config.amount,
+                new_fees.create_minter_config.amount
+            );
+            assert_eq!(
+                protocol_config.fees.mint_asset.amount,
+                new_fees.mint_asset.amount
+            );
+            assert_eq!(
+                protocol_config.fees.generic_operation.amount,
+                new_fees.generic_operation.amount
+            );
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);
@@ -169,8 +196,7 @@ fn test_update_fees() {
 
 #[test]
 fn test_update_single_fee() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_protocol();
+    let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let new_fee = Fee {
         amount: 3_000_000,
@@ -194,13 +220,26 @@ fn test_update_single_fee() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
+            let protocol_config =
+                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id);
 
             assert_eq!(protocol_config.fees.create_project.amount, new_fee.amount);
-            assert_eq!(protocol_config.fees.create_project.fee_type, new_fee.fee_type);
-            assert_eq!(protocol_config.fees.mint_asset.amount, FEE_MINT_ASSET_AMOUNT);
-            assert_eq!(protocol_config.fees.create_minter_config.amount, FEE_CREATE_MINTER_CONFIG_AMOUNT);
-            assert_eq!(protocol_config.fees.generic_operation.amount, FEE_GENERIC_OPERATION_AMOUNT);
+            assert_eq!(
+                protocol_config.fees.create_project.fee_type,
+                new_fee.fee_type
+            );
+            assert_eq!(
+                protocol_config.fees.mint_asset.amount,
+                FEE_MINT_ASSET_AMOUNT
+            );
+            assert_eq!(
+                protocol_config.fees.create_minter_config.amount,
+                FEE_CREATE_MINTER_CONFIG_AMOUNT
+            );
+            assert_eq!(
+                protocol_config.fees.generic_operation.amount,
+                FEE_GENERIC_OPERATION_AMOUNT
+            );
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);
@@ -210,11 +249,11 @@ fn test_update_single_fee() {
 
 #[test]
 fn test_protocol_fees_transfer() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_protocol();
+    let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
-    fixture.svm
+    fixture
+        .svm
         .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
         .expect("Failed to fund protocol config");
 
@@ -254,11 +293,11 @@ fn test_protocol_fees_transfer() {
 
 #[test]
 fn test_protocol_fees_transfer_non_admin() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_protocol();
+    let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
-    fixture.svm
+    fixture
+        .svm
         .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
         .expect("Failed to fund protocol config");
 
@@ -275,10 +314,7 @@ fn test_protocol_fees_transfer_non_admin() {
         non_admin.pubkey(),
         destination,
         fixture.payer.pubkey(),
-        &[
-            &fixture.payer.insecure_clone(),
-            &non_admin.insecure_clone(),
-        ],
+        &[&fixture.payer.insecure_clone(), &non_admin.insecure_clone()],
     );
 
     match result {
@@ -294,18 +330,21 @@ fn test_protocol_fees_transfer_non_admin() {
             );
 
             let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
-            assert_eq!(final_balance, initial_balance, "Balance should not change on failed transfer");
+            assert_eq!(
+                final_balance, initial_balance,
+                "Balance should not change on failed transfer"
+            );
         }
     }
 }
 
 #[test]
 fn test_protocol_fees_transfer_to_non_whitelisted_address() {
-    let mut fixture = TestFixture::new()
-        .with_initialize_protocol();
+    let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(&fixture.program_id);
-    fixture.svm
+    fixture
+        .svm
         .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
         .expect("Failed to fund protocol config");
 
@@ -340,7 +379,10 @@ fn test_protocol_fees_transfer_to_non_whitelisted_address() {
             );
 
             let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
-            assert_eq!(final_balance, initial_balance, "Balance should not change on failed transfer");
+            assert_eq!(
+                final_balance, initial_balance,
+                "Balance should not change on failed transfer"
+            );
         }
     }
 }
@@ -356,8 +398,9 @@ fn test_project_fees_transfer() {
         &fixture.project_owner.pubkey(),
         PROJECT_1_ID,
     );
-    
-    fixture.svm
+
+    fixture
+        .svm
         .airdrop(&project_config_pda, 3 * LAMPORTS_PER_SOL)
         .expect("Failed to fund project config");
 
@@ -407,8 +450,9 @@ fn test_project_fees_transfer_by_non_owner() {
         &fixture.project_owner.pubkey(),
         PROJECT_1_ID,
     );
-    
-    fixture.svm
+
+    fixture
+        .svm
         .airdrop(&project_config_pda, 3 * LAMPORTS_PER_SOL)
         .expect("Failed to fund project config");
 
@@ -426,10 +470,7 @@ fn test_project_fees_transfer_by_non_owner() {
         destination,
         PROJECT_1_ID,
         fixture.payer.pubkey(),
-        &[
-            &non_owner.insecure_clone(),
-            &fixture.payer.insecure_clone(),
-        ],
+        &[&non_owner.insecure_clone(), &fixture.payer.insecure_clone()],
     );
 
     match result {
@@ -445,7 +486,10 @@ fn test_project_fees_transfer_by_non_owner() {
             );
 
             let final_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
-            assert_eq!(final_balance, initial_balance, "Balance should not change on failed transfer");
+            assert_eq!(
+                final_balance, initial_balance,
+                "Balance should not change on failed transfer"
+            );
         }
     }
 }

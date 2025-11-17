@@ -7,10 +7,10 @@ use solana_sdk::{
 };
 use std::str::FromStr;
 
-use crate::setup::test_data::*;
 use crate::setup::instructions::Instructions;
+use crate::setup::test_data::*;
 
-pub struct TestFixture{
+pub struct TestFixture {
     pub svm: LiteSVM,
     pub program_id: Pubkey,
     pub payer: Keypair,
@@ -115,11 +115,7 @@ impl TestFixture {
         self
     }
 
-    pub fn with_update_single_fee(
-        mut self,
-        operation: Operation,
-        fee: Fee,
-    ) -> Self {
+    pub fn with_update_single_fee(mut self, operation: Operation, fee: Fee) -> Self {
         Instructions::update_single_fee(
             &mut self.svm,
             &self.program_id,

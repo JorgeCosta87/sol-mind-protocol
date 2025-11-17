@@ -1,17 +1,13 @@
-use litesvm::{LiteSVM, types::TransactionResult};
-use solana_sdk::signature::Keypair;
-use solana_pubkey::Pubkey;
+use litesvm::{types::TransactionResult, LiteSVM};
 use sol_mind_protocol_client::generated::{
     instructions::{
-        InitializeProtocolBuilder,
-        CreateProjectBuilder,
-        UpdateFeesBuilder,
-        UpdateSingleFeeBuilder,
-        ProjectFeesTransferBuilder,
-        ProtocolFeesTransferBuilder,
+        CreateProjectBuilder, InitializeProtocolBuilder, ProjectFeesTransferBuilder,
+        ProtocolFeesTransferBuilder, UpdateFeesBuilder, UpdateSingleFeeBuilder,
     },
-    types::{FeesStructure, Fee, Operation},
+    types::{Fee, FeesStructure, Operation},
 };
+use solana_pubkey::Pubkey;
+use solana_sdk::signature::Keypair;
 use solana_sdk_ids::system_program::ID as SYSTEM_PROGRAM_ID;
 
 use crate::setup::accounts::AccountHelper;
@@ -53,7 +49,8 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (project_config_pda, _) = AccountHelper::find_project_pda(program_id, &owner, project_id);
+        let (project_config_pda, _) =
+            AccountHelper::find_project_pda(program_id, &owner, project_id);
         let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
 
         let instruction = CreateProjectBuilder::new()
@@ -120,7 +117,8 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (project_config_pda, _) = AccountHelper::find_project_pda(program_id, &owner, project_id);
+        let (project_config_pda, _) =
+            AccountHelper::find_project_pda(program_id, &owner, project_id);
 
         let instruction = ProjectFeesTransferBuilder::new()
             .owner(owner)
@@ -153,4 +151,3 @@ impl Instructions {
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
 }
-

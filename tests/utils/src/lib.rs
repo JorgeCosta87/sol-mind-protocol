@@ -4,6 +4,7 @@ use litesvm::{
 };
 use solana_sdk::{
     instruction::Instruction,
+    lamports,
     pubkey::Pubkey,
     signature::{read_keypair_file, Keypair, Signer},
     transaction::Transaction,

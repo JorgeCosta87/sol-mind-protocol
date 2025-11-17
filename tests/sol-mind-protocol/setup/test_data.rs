@@ -26,7 +26,6 @@ pub const ASSET_URI: &str = "https://";
 pub const DEFAULT_PROJECT_NAME: &str = "Test project";
 pub const DEFAULT_PROJECT_DESCRIPTION: &str = "Project description";
 
-
 pub fn default_fees_structure() -> sol_mind_protocol_client::generated::types::FeesStructure {
     use sol_mind_protocol_client::generated::types::{Fee, FeeType};
     sol_mind_protocol_client::generated::types::FeesStructure {

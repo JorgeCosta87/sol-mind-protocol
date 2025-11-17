@@ -1,10 +1,8 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    helpers::pay_protocol_fee, 
-    state::{
-        Operation, ProjectConfig, ProtocolConfig
-    }
+    helpers::pay_protocol_fee,
+    state::{Operation, ProjectConfig, ProtocolConfig},
 };
 
 #[derive(Accounts)]
