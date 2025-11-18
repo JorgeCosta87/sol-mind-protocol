@@ -45,6 +45,11 @@ impl AccountHelper {
             .expect("Failed to deserialize project config account")
     }
 
+    pub fn find_treasury_pda(program_id: &Pubkey, project_config_pda: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::try_find_program_address(&[b"treasury", project_config_pda.as_ref()], program_id)
+            .unwrap()
+    }
+
     pub fn find_minter_config_pda(
         token_manager_program_id: &Pubkey,
         project_id: u64,

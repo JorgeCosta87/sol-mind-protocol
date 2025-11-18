@@ -7,33 +7,24 @@
  */
 
 import {
-  addDecoderSizePrefix,
-  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressDecoder,
   getAddressEncoder,
-  getArrayDecoder,
-  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
-  getUtf8Decoder,
-  getUtf8Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
   type Address,
-  type Codec,
-  type Decoder,
-  type Encoder,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
@@ -46,27 +37,26 @@ import {
 import { SOL_MIND_PROTOCOL_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
-  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
 
-export const CREATE_PROJECT_DISCRIMINATOR = new Uint8Array([
-  148, 219, 181, 42, 221, 114, 145, 190,
+export const TRANSFER_PROJECT_FEES_DISCRIMINATOR = new Uint8Array([
+  197, 83, 232, 147, 84, 139, 67, 254,
 ]);
 
-export function getCreateProjectDiscriminatorBytes() {
+export function getTransferProjectFeesDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CREATE_PROJECT_DISCRIMINATOR
+    TRANSFER_PROJECT_FEES_DISCRIMINATOR
   );
 }
 
-export type CreateProjectInstruction<
+export type TransferProjectFeesInstruction<
   TProgram extends string = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
   TAccountOwner extends string | AccountMeta<string> = string,
+  TAccountTo extends string | AccountMeta<string> = string,
   TAccountProjectConfig extends string | AccountMeta<string> = string,
   TAccountTreasury extends string | AccountMeta<string> = string,
-  TAccountProtocolConfig extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -79,15 +69,13 @@ export type CreateProjectInstruction<
         ? WritableSignerAccount<TAccountOwner> &
             AccountSignerMeta<TAccountOwner>
         : TAccountOwner,
+      TAccountTo extends string ? WritableAccount<TAccountTo> : TAccountTo,
       TAccountProjectConfig extends string
         ? WritableAccount<TAccountProjectConfig>
         : TAccountProjectConfig,
       TAccountTreasury extends string
         ? WritableAccount<TAccountTreasury>
         : TAccountTreasury,
-      TAccountProtocolConfig extends string
-        ? WritableAccount<TAccountProtocolConfig>
-        : TAccountProtocolConfig,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -95,95 +83,83 @@ export type CreateProjectInstruction<
     ]
   >;
 
-export type CreateProjectInstructionData = {
+export type TransferProjectFeesInstructionData = {
   discriminator: ReadonlyUint8Array;
-  projectId: bigint;
-  name: string;
-  description: string;
-  authorities: Array<Address>;
+  amount: bigint;
 };
 
-export type CreateProjectInstructionDataArgs = {
-  projectId: number | bigint;
-  name: string;
-  description: string;
-  authorities: Array<Address>;
+export type TransferProjectFeesInstructionDataArgs = {
+  amount: number | bigint;
 };
 
-export function getCreateProjectInstructionDataEncoder(): Encoder<CreateProjectInstructionDataArgs> {
+export function getTransferProjectFeesInstructionDataEncoder(): FixedSizeEncoder<TransferProjectFeesInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['projectId', getU64Encoder()],
-      ['name', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ['description', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
-      ['authorities', getArrayEncoder(getAddressEncoder())],
+      ['amount', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CREATE_PROJECT_DISCRIMINATOR })
+    (value) => ({
+      ...value,
+      discriminator: TRANSFER_PROJECT_FEES_DISCRIMINATOR,
+    })
   );
 }
 
-export function getCreateProjectInstructionDataDecoder(): Decoder<CreateProjectInstructionData> {
+export function getTransferProjectFeesInstructionDataDecoder(): FixedSizeDecoder<TransferProjectFeesInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['projectId', getU64Decoder()],
-    ['name', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ['description', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
-    ['authorities', getArrayDecoder(getAddressDecoder())],
+    ['amount', getU64Decoder()],
   ]);
 }
 
-export function getCreateProjectInstructionDataCodec(): Codec<
-  CreateProjectInstructionDataArgs,
-  CreateProjectInstructionData
+export function getTransferProjectFeesInstructionDataCodec(): FixedSizeCodec<
+  TransferProjectFeesInstructionDataArgs,
+  TransferProjectFeesInstructionData
 > {
   return combineCodec(
-    getCreateProjectInstructionDataEncoder(),
-    getCreateProjectInstructionDataDecoder()
+    getTransferProjectFeesInstructionDataEncoder(),
+    getTransferProjectFeesInstructionDataDecoder()
   );
 }
 
-export type CreateProjectAsyncInput<
+export type TransferProjectFeesAsyncInput<
   TAccountOwner extends string = string,
+  TAccountTo extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountTreasury extends string = string,
-  TAccountProtocolConfig extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
-  projectConfig?: Address<TAccountProjectConfig>;
+  to: Address<TAccountTo>;
+  projectConfig: Address<TAccountProjectConfig>;
   treasury?: Address<TAccountTreasury>;
-  protocolConfig?: Address<TAccountProtocolConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
-  projectId: CreateProjectInstructionDataArgs['projectId'];
-  name: CreateProjectInstructionDataArgs['name'];
-  description: CreateProjectInstructionDataArgs['description'];
-  authorities: CreateProjectInstructionDataArgs['authorities'];
+  amount: TransferProjectFeesInstructionDataArgs['amount'];
 };
 
-export async function getCreateProjectInstructionAsync<
+export async function getTransferProjectFeesInstructionAsync<
   TAccountOwner extends string,
+  TAccountTo extends string,
   TAccountProjectConfig extends string,
   TAccountTreasury extends string,
-  TAccountProtocolConfig extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
-  input: CreateProjectAsyncInput<
+  input: TransferProjectFeesAsyncInput<
     TAccountOwner,
+    TAccountTo,
     TAccountProjectConfig,
     TAccountTreasury,
-    TAccountProtocolConfig,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  CreateProjectInstruction<
+  TransferProjectFeesInstruction<
     TProgramAddress,
     TAccountOwner,
+    TAccountTo,
     TAccountProjectConfig,
     TAccountTreasury,
-    TAccountProtocolConfig,
     TAccountSystemProgram
   >
 > {
@@ -194,9 +170,9 @@ export async function getCreateProjectInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
+    to: { value: input.to ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: true },
     treasury: { value: input.treasury ?? null, isWritable: true },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -208,18 +184,6 @@ export async function getCreateProjectInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.projectConfig.value) {
-    accounts.projectConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([112, 114, 111, 106, 101, 99, 116])
-        ),
-        getAddressEncoder().encode(expectAddress(accounts.owner.value)),
-        getU64Encoder().encode(expectSome(args.projectId)),
-      ],
-    });
-  }
   if (!accounts.treasury.value) {
     accounts.treasury.value = await getProgramDerivedAddress({
       programAddress,
@@ -231,19 +195,6 @@ export async function getCreateProjectInstructionAsync<
       ],
     });
   }
-  if (!accounts.protocolConfig.value) {
-    accounts.protocolConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            115, 111, 108, 45, 109, 105, 110, 100, 45, 112, 114, 111, 116, 111,
-            99, 111, 108,
-          ])
-        ),
-      ],
-    });
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -253,65 +204,62 @@ export async function getCreateProjectInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.to),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.treasury),
-      getAccountMeta(accounts.protocolConfig),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCreateProjectInstructionDataEncoder().encode(
-      args as CreateProjectInstructionDataArgs
+    data: getTransferProjectFeesInstructionDataEncoder().encode(
+      args as TransferProjectFeesInstructionDataArgs
     ),
     programAddress,
-  } as CreateProjectInstruction<
+  } as TransferProjectFeesInstruction<
     TProgramAddress,
     TAccountOwner,
+    TAccountTo,
     TAccountProjectConfig,
     TAccountTreasury,
-    TAccountProtocolConfig,
     TAccountSystemProgram
   >);
 }
 
-export type CreateProjectInput<
+export type TransferProjectFeesInput<
   TAccountOwner extends string = string,
+  TAccountTo extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountTreasury extends string = string,
-  TAccountProtocolConfig extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
+  to: Address<TAccountTo>;
   projectConfig: Address<TAccountProjectConfig>;
   treasury: Address<TAccountTreasury>;
-  protocolConfig: Address<TAccountProtocolConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
-  projectId: CreateProjectInstructionDataArgs['projectId'];
-  name: CreateProjectInstructionDataArgs['name'];
-  description: CreateProjectInstructionDataArgs['description'];
-  authorities: CreateProjectInstructionDataArgs['authorities'];
+  amount: TransferProjectFeesInstructionDataArgs['amount'];
 };
 
-export function getCreateProjectInstruction<
+export function getTransferProjectFeesInstruction<
   TAccountOwner extends string,
+  TAccountTo extends string,
   TAccountProjectConfig extends string,
   TAccountTreasury extends string,
-  TAccountProtocolConfig extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
-  input: CreateProjectInput<
+  input: TransferProjectFeesInput<
     TAccountOwner,
+    TAccountTo,
     TAccountProjectConfig,
     TAccountTreasury,
-    TAccountProtocolConfig,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): CreateProjectInstruction<
+): TransferProjectFeesInstruction<
   TProgramAddress,
   TAccountOwner,
+  TAccountTo,
   TAccountProjectConfig,
   TAccountTreasury,
-  TAccountProtocolConfig,
   TAccountSystemProgram
 > {
   // Program address.
@@ -321,9 +269,9 @@ export function getCreateProjectInstruction<
   // Original accounts.
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
+    to: { value: input.to ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: true },
     treasury: { value: input.treasury ?? null, isWritable: true },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -344,48 +292,48 @@ export function getCreateProjectInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.to),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.treasury),
-      getAccountMeta(accounts.protocolConfig),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCreateProjectInstructionDataEncoder().encode(
-      args as CreateProjectInstructionDataArgs
+    data: getTransferProjectFeesInstructionDataEncoder().encode(
+      args as TransferProjectFeesInstructionDataArgs
     ),
     programAddress,
-  } as CreateProjectInstruction<
+  } as TransferProjectFeesInstruction<
     TProgramAddress,
     TAccountOwner,
+    TAccountTo,
     TAccountProjectConfig,
     TAccountTreasury,
-    TAccountProtocolConfig,
     TAccountSystemProgram
   >);
 }
 
-export type ParsedCreateProjectInstruction<
+export type ParsedTransferProjectFeesInstruction<
   TProgram extends string = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
     owner: TAccountMetas[0];
-    projectConfig: TAccountMetas[1];
-    treasury: TAccountMetas[2];
-    protocolConfig: TAccountMetas[3];
+    to: TAccountMetas[1];
+    projectConfig: TAccountMetas[2];
+    treasury: TAccountMetas[3];
     systemProgram: TAccountMetas[4];
   };
-  data: CreateProjectInstructionData;
+  data: TransferProjectFeesInstructionData;
 };
 
-export function parseCreateProjectInstruction<
+export function parseTransferProjectFeesInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedCreateProjectInstruction<TProgram, TAccountMetas> {
+): ParsedTransferProjectFeesInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -400,11 +348,13 @@ export function parseCreateProjectInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       owner: getNextAccount(),
+      to: getNextAccount(),
       projectConfig: getNextAccount(),
       treasury: getNextAccount(),
-      protocolConfig: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getCreateProjectInstructionDataDecoder().decode(instruction.data),
+    data: getTransferProjectFeesInstructionDataDecoder().decode(
+      instruction.data
+    ),
   };
 }

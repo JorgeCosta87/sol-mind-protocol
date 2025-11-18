@@ -64,6 +64,7 @@ export type ProjectConfig = {
   name: string;
   description: string;
   autthorities: Array<Address>;
+  treasuryBump: number;
   bump: number;
 };
 
@@ -73,6 +74,7 @@ export type ProjectConfigArgs = {
   name: string;
   description: string;
   autthorities: Array<Address>;
+  treasuryBump: number;
   bump: number;
 };
 
@@ -85,6 +87,7 @@ export function getProjectConfigEncoder(): Encoder<ProjectConfigArgs> {
       ['name', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ['description', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ['autthorities', getArrayEncoder(getAddressEncoder())],
+      ['treasuryBump', getU8Encoder()],
       ['bump', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: PROJECT_CONFIG_DISCRIMINATOR })
@@ -99,6 +102,7 @@ export function getProjectConfigDecoder(): Decoder<ProjectConfig> {
     ['name', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['description', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['autthorities', getArrayDecoder(getAddressDecoder())],
+    ['treasuryBump', getU8Decoder()],
     ['bump', getU8Decoder()],
   ]);
 }

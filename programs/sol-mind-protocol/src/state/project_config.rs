@@ -11,6 +11,7 @@ pub struct ProjectConfig {
     pub description: String,
     #[max_len(3)]
     pub autthorities: Vec<Pubkey>,
+    pub treasury_bump: u8,
     pub bump: u8,
 }
 

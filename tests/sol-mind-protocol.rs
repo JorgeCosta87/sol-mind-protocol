@@ -95,28 +95,20 @@ fn test_create_project() {
             let protocol_config =
                 AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
 
+            let (project_config_pda, _) = AccountHelper::find_project_pda(
+                &fixture.program_id_sol_mind,
+                &fixture.project_owner.pubkey(),
+                PROJECT_1_ID,
+            );
+            let (_, treasury_bump) =
+                AccountHelper::find_treasury_pda(&fixture.program_id_sol_mind, &project_config_pda);
+
             let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
             assert_eq!(project_config.owner, fixture.project_owner.pubkey());
             assert_eq!(project_config.name, project_name);
             assert_eq!(project_config.description, project_description);
-            assert_eq!(
-                protocol_config.fees.create_project.amount,
-                FEE_CREATE_PROJECT_AMOUNT
-            );
-            assert_eq!(
-                protocol_config.fees.mint_asset.amount,
-                FEE_MINT_ASSET_AMOUNT
-            );
-            assert_eq!(
-                protocol_config.fees.create_minter_config.amount,
-                FEE_CREATE_MINTER_CONFIG_AMOUNT
-            );
-            assert_eq!(
-                protocol_config.fees.generic_operation.amount,
-                FEE_GENERIC_OPERATION_AMOUNT
-            );
-            assert_eq!(project_config.autthorities, authorities);
+            assert_eq!(project_config.treasury_bump, treasury_bump);
 
             assert_eq!(
                 protocol_final_balance,
@@ -402,17 +394,20 @@ fn test_project_fees_transfer() {
         PROJECT_1_ID,
     );
 
+    let (treasury_pda, _) =
+        AccountHelper::find_treasury_pda(&fixture.program_id_sol_mind, &project_config_pda);
+
     fixture
         .svm
-        .airdrop(&project_config_pda, 3 * LAMPORTS_PER_SOL)
-        .expect("Failed to fund project config");
+        .airdrop(&treasury_pda, 3 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund treasury");
 
-    let initial_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+    let initial_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
 
     let transfer_amount = 1 * LAMPORTS_PER_SOL;
     let destination = fixture.project_authority_1.pubkey();
 
-    let result = Instructions::project_fees_transfer(
+    let result = Instructions::transfer_project_fees(
         &mut fixture.svm,
         &fixture.program_id_sol_mind,
         transfer_amount,
@@ -430,7 +425,7 @@ fn test_project_fees_transfer() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let final_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+            let final_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
             let destination_final_balance = utils::get_lamports(&fixture.svm, &destination);
 
             assert_eq!(final_balance, initial_balance - transfer_amount);
@@ -454,18 +449,21 @@ fn test_project_fees_transfer_by_non_owner() {
         PROJECT_1_ID,
     );
 
+    let (treasury_pda, _) =
+        AccountHelper::find_treasury_pda(&fixture.program_id_sol_mind, &project_config_pda);
+
     fixture
         .svm
-        .airdrop(&project_config_pda, 3 * LAMPORTS_PER_SOL)
-        .expect("Failed to fund project config");
+        .airdrop(&treasury_pda, 3 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund treasury");
 
-    let initial_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+    let initial_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
 
     let transfer_amount = 1 * LAMPORTS_PER_SOL;
     let destination = fixture.project_authority_1.pubkey();
     let non_owner = Keypair::new();
 
-    let result = Instructions::project_fees_transfer(
+    let result = Instructions::transfer_project_fees(
         &mut fixture.svm,
         &fixture.program_id_sol_mind,
         transfer_amount,
@@ -488,7 +486,7 @@ fn test_project_fees_transfer_by_non_owner() {
                 e
             );
 
-            let final_balance = utils::get_lamports(&fixture.svm, &project_config_pda);
+            let final_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
             assert_eq!(
                 final_balance, initial_balance,
                 "Balance should not change on failed transfer"

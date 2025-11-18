@@ -35,17 +35,17 @@ import {
 import { SOL_MIND_PROTOCOL_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const PROTOCOL_FEES_TRANSFER_DISCRIMINATOR = new Uint8Array([
-  237, 152, 50, 99, 40, 3, 134, 37,
+export const TRANSFER_PROTOCOL_FEES_DISCRIMINATOR = new Uint8Array([
+  142, 148, 70, 57, 116, 166, 82, 111,
 ]);
 
-export function getProtocolFeesTransferDiscriminatorBytes() {
+export function getTransferProtocolFeesDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PROTOCOL_FEES_TRANSFER_DISCRIMINATOR
+    TRANSFER_PROTOCOL_FEES_DISCRIMINATOR
   );
 }
 
-export type ProtocolFeesTransferInstruction<
+export type TransferProtocolFeesInstruction<
   TProgram extends string = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountTo extends string | AccountMeta<string> = string,
@@ -67,16 +67,16 @@ export type ProtocolFeesTransferInstruction<
     ]
   >;
 
-export type ProtocolFeesTransferInstructionData = {
+export type TransferProtocolFeesInstructionData = {
   discriminator: ReadonlyUint8Array;
   amount: bigint;
 };
 
-export type ProtocolFeesTransferInstructionDataArgs = {
+export type TransferProtocolFeesInstructionDataArgs = {
   amount: number | bigint;
 };
 
-export function getProtocolFeesTransferInstructionDataEncoder(): FixedSizeEncoder<ProtocolFeesTransferInstructionDataArgs> {
+export function getTransferProtocolFeesInstructionDataEncoder(): FixedSizeEncoder<TransferProtocolFeesInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -84,29 +84,29 @@ export function getProtocolFeesTransferInstructionDataEncoder(): FixedSizeEncode
     ]),
     (value) => ({
       ...value,
-      discriminator: PROTOCOL_FEES_TRANSFER_DISCRIMINATOR,
+      discriminator: TRANSFER_PROTOCOL_FEES_DISCRIMINATOR,
     })
   );
 }
 
-export function getProtocolFeesTransferInstructionDataDecoder(): FixedSizeDecoder<ProtocolFeesTransferInstructionData> {
+export function getTransferProtocolFeesInstructionDataDecoder(): FixedSizeDecoder<TransferProtocolFeesInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amount', getU64Decoder()],
   ]);
 }
 
-export function getProtocolFeesTransferInstructionDataCodec(): FixedSizeCodec<
-  ProtocolFeesTransferInstructionDataArgs,
-  ProtocolFeesTransferInstructionData
+export function getTransferProtocolFeesInstructionDataCodec(): FixedSizeCodec<
+  TransferProtocolFeesInstructionDataArgs,
+  TransferProtocolFeesInstructionData
 > {
   return combineCodec(
-    getProtocolFeesTransferInstructionDataEncoder(),
-    getProtocolFeesTransferInstructionDataDecoder()
+    getTransferProtocolFeesInstructionDataEncoder(),
+    getTransferProtocolFeesInstructionDataDecoder()
   );
 }
 
-export type ProtocolFeesTransferAsyncInput<
+export type TransferProtocolFeesAsyncInput<
   TAccountAdmin extends string = string,
   TAccountTo extends string = string,
   TAccountProtocolConfig extends string = string,
@@ -114,23 +114,23 @@ export type ProtocolFeesTransferAsyncInput<
   admin: TransactionSigner<TAccountAdmin>;
   to: Address<TAccountTo>;
   protocolConfig?: Address<TAccountProtocolConfig>;
-  amount: ProtocolFeesTransferInstructionDataArgs['amount'];
+  amount: TransferProtocolFeesInstructionDataArgs['amount'];
 };
 
-export async function getProtocolFeesTransferInstructionAsync<
+export async function getTransferProtocolFeesInstructionAsync<
   TAccountAdmin extends string,
   TAccountTo extends string,
   TAccountProtocolConfig extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
-  input: ProtocolFeesTransferAsyncInput<
+  input: TransferProtocolFeesAsyncInput<
     TAccountAdmin,
     TAccountTo,
     TAccountProtocolConfig
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  ProtocolFeesTransferInstruction<
+  TransferProtocolFeesInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountTo,
@@ -177,11 +177,11 @@ export async function getProtocolFeesTransferInstructionAsync<
       getAccountMeta(accounts.to),
       getAccountMeta(accounts.protocolConfig),
     ],
-    data: getProtocolFeesTransferInstructionDataEncoder().encode(
-      args as ProtocolFeesTransferInstructionDataArgs
+    data: getTransferProtocolFeesInstructionDataEncoder().encode(
+      args as TransferProtocolFeesInstructionDataArgs
     ),
     programAddress,
-  } as ProtocolFeesTransferInstruction<
+  } as TransferProtocolFeesInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountTo,
@@ -189,7 +189,7 @@ export async function getProtocolFeesTransferInstructionAsync<
   >);
 }
 
-export type ProtocolFeesTransferInput<
+export type TransferProtocolFeesInput<
   TAccountAdmin extends string = string,
   TAccountTo extends string = string,
   TAccountProtocolConfig extends string = string,
@@ -197,22 +197,22 @@ export type ProtocolFeesTransferInput<
   admin: TransactionSigner<TAccountAdmin>;
   to: Address<TAccountTo>;
   protocolConfig: Address<TAccountProtocolConfig>;
-  amount: ProtocolFeesTransferInstructionDataArgs['amount'];
+  amount: TransferProtocolFeesInstructionDataArgs['amount'];
 };
 
-export function getProtocolFeesTransferInstruction<
+export function getTransferProtocolFeesInstruction<
   TAccountAdmin extends string,
   TAccountTo extends string,
   TAccountProtocolConfig extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
-  input: ProtocolFeesTransferInput<
+  input: TransferProtocolFeesInput<
     TAccountAdmin,
     TAccountTo,
     TAccountProtocolConfig
   >,
   config?: { programAddress?: TProgramAddress }
-): ProtocolFeesTransferInstruction<
+): TransferProtocolFeesInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountTo,
@@ -243,11 +243,11 @@ export function getProtocolFeesTransferInstruction<
       getAccountMeta(accounts.to),
       getAccountMeta(accounts.protocolConfig),
     ],
-    data: getProtocolFeesTransferInstructionDataEncoder().encode(
-      args as ProtocolFeesTransferInstructionDataArgs
+    data: getTransferProtocolFeesInstructionDataEncoder().encode(
+      args as TransferProtocolFeesInstructionDataArgs
     ),
     programAddress,
-  } as ProtocolFeesTransferInstruction<
+  } as TransferProtocolFeesInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountTo,
@@ -255,7 +255,7 @@ export function getProtocolFeesTransferInstruction<
   >);
 }
 
-export type ParsedProtocolFeesTransferInstruction<
+export type ParsedTransferProtocolFeesInstruction<
   TProgram extends string = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -265,17 +265,17 @@ export type ParsedProtocolFeesTransferInstruction<
     to: TAccountMetas[1];
     protocolConfig: TAccountMetas[2];
   };
-  data: ProtocolFeesTransferInstructionData;
+  data: TransferProtocolFeesInstructionData;
 };
 
-export function parseProtocolFeesTransferInstruction<
+export function parseTransferProtocolFeesInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedProtocolFeesTransferInstruction<TProgram, TAccountMetas> {
+): ParsedTransferProtocolFeesInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -293,7 +293,7 @@ export function parseProtocolFeesTransferInstruction<
       to: getNextAccount(),
       protocolConfig: getNextAccount(),
     },
-    data: getProtocolFeesTransferInstructionDataDecoder().decode(
+    data: getTransferProtocolFeesInstructionDataDecoder().decode(
       instruction.data
     ),
   };

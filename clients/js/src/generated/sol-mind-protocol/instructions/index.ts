@@ -8,7 +8,7 @@
 
 export * from './createProject';
 export * from './initializeProtocol';
-export * from './projectFeesTransfer';
-export * from './protocolFeesTransfer';
+export * from './transferProjectFees';
+export * from './transferProtocolFees';
 export * from './updateFees';
 export * from './updateSingleFee';

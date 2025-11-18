@@ -16,8 +16,8 @@ import {
 import {
   type ParsedCreateProjectInstruction,
   type ParsedInitializeProtocolInstruction,
-  type ParsedProjectFeesTransferInstruction,
-  type ParsedProtocolFeesTransferInstruction,
+  type ParsedTransferProjectFeesInstruction,
+  type ParsedTransferProtocolFeesInstruction,
   type ParsedUpdateFeesInstruction,
   type ParsedUpdateSingleFeeInstruction,
 } from '../instructions';
@@ -64,8 +64,8 @@ export function identifySolMindProtocolAccount(
 export enum SolMindProtocolInstruction {
   CreateProject,
   InitializeProtocol,
-  ProjectFeesTransfer,
-  ProtocolFeesTransfer,
+  TransferProjectFees,
+  TransferProtocolFees,
   UpdateFees,
   UpdateSingleFee,
 }
@@ -100,23 +100,23 @@ export function identifySolMindProtocolInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([70, 183, 235, 85, 167, 67, 132, 76])
+        new Uint8Array([197, 83, 232, 147, 84, 139, 67, 254])
       ),
       0
     )
   ) {
-    return SolMindProtocolInstruction.ProjectFeesTransfer;
+    return SolMindProtocolInstruction.TransferProjectFees;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([237, 152, 50, 99, 40, 3, 134, 37])
+        new Uint8Array([142, 148, 70, 57, 116, 166, 82, 111])
       ),
       0
     )
   ) {
-    return SolMindProtocolInstruction.ProtocolFeesTransfer;
+    return SolMindProtocolInstruction.TransferProtocolFees;
   }
   if (
     containsBytes(
@@ -155,11 +155,11 @@ export type ParsedSolMindProtocolInstruction<
       instructionType: SolMindProtocolInstruction.InitializeProtocol;
     } & ParsedInitializeProtocolInstruction<TProgram>)
   | ({
-      instructionType: SolMindProtocolInstruction.ProjectFeesTransfer;
-    } & ParsedProjectFeesTransferInstruction<TProgram>)
+      instructionType: SolMindProtocolInstruction.TransferProjectFees;
+    } & ParsedTransferProjectFeesInstruction<TProgram>)
   | ({
-      instructionType: SolMindProtocolInstruction.ProtocolFeesTransfer;
-    } & ParsedProtocolFeesTransferInstruction<TProgram>)
+      instructionType: SolMindProtocolInstruction.TransferProtocolFees;
+    } & ParsedTransferProtocolFeesInstruction<TProgram>)
   | ({
       instructionType: SolMindProtocolInstruction.UpdateFees;
     } & ParsedUpdateFeesInstruction<TProgram>)

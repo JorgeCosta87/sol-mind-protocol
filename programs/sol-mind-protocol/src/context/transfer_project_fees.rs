@@ -1,7 +1,9 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{
+    prelude::*,
+    system_program::{transfer, Transfer},
+};
 
-use crate::errors::ProtocolError;
-use crate::ProjectConfig;
+use crate::{helpers::validate_transfer, ProjectConfig};
 
 #[derive(Accounts)]
 pub struct TransferProjectFees<'info> {
@@ -19,25 +21,36 @@ pub struct TransferProjectFees<'info> {
         bump = project_config.bump,
     )]
     pub project_config: Account<'info, ProjectConfig>,
+    #[account(
+        mut,
+        seeds = [b"treasury", project_config.key().as_ref()],
+        bump = project_config.treasury_bump
+    )]
+    pub treasury: SystemAccount<'info>,
+
+    pub system_program: Program<'info, System>,
 }
 
 impl<'info> TransferProjectFees<'info> {
     pub fn transfer_project_fees(&mut self, amount: u64) -> Result<()> {
-        let project_config_info = self.project_config.to_account_info();
-        let current_balance = project_config_info.lamports();
-        let rent_exempt = Rent::get()?.minimum_balance(project_config_info.data_len());
+        validate_transfer(&self.treasury.to_account_info(), amount)?;
 
-        let remaining_balance = current_balance
-            .checked_sub(amount)
-            .ok_or(ProtocolError::InsufficientFunds)?;
+        let cpi_program = self.system_program.to_account_info();
+        let cpi_accounts = Transfer {
+            from: self.treasury.to_account_info(),
+            to: self.to.to_account_info(),
+        };
 
-        require!(
-            remaining_balance >= rent_exempt,
-            ProtocolError::MinimumBalanceRequired
-        );
+        let seeds = &[
+            b"treasury".as_ref(),
+            self.project_config.to_account_info().key.as_ref(),
+            &[self.project_config.treasury_bump],
+        ];
 
-        self.project_config.sub_lamports(amount)?;
-        self.to.add_lamports(amount)?;
+        let signer_seeds = &[&seeds[..]];
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+
+        transfer(cpi_ctx, amount)?;
 
         Ok(())
     }

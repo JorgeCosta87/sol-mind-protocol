@@ -26,6 +26,7 @@ pub struct ProjectConfig {
         serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>")
     )]
     pub autthorities: Vec<Pubkey>,
+    pub treasury_bump: u8,
     pub bump: u8,
 }
 

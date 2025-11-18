@@ -1,9 +1,8 @@
-use anchor_lang::prelude::*;
-
 use crate::{
-    helpers::pay_protocol_fee,
+    helpers::{cpi_transfer, pay_protocol_fee},
     state::{Operation, ProjectConfig, ProtocolConfig},
 };
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 #[instruction(project_id: u64)]
@@ -24,6 +23,12 @@ pub struct CreateProject<'info> {
     pub project_config: Account<'info, ProjectConfig>,
     #[account(
         mut,
+        seeds = [b"treasury", project_config.key().as_ref()],
+        bump,
+    )]
+    pub treasury: SystemAccount<'info>,
+    #[account(
+        mut,
         seeds = [b"sol-mind-protocol"],
         bump = protocol_config.bump,
     )]
@@ -38,7 +43,7 @@ impl<'info> CreateProject<'info> {
         name: String,
         description: String,
         authorities: Vec<Pubkey>,
-        bump: u8,
+        bumps: &CreateProjectBumps,
     ) -> Result<()> {
         pay_protocol_fee(
             &self.owner,
@@ -48,13 +53,23 @@ impl<'info> CreateProject<'info> {
             None,
         )?;
 
+        let rent_exempt = Rent::get()?.minimum_balance(self.treasury.to_account_info().data_len());
+
+        cpi_transfer(
+            self.owner.to_account_info(),
+            self.treasury.to_account_info(),
+            rent_exempt,
+            &self.system_program,
+        )?;
+
         self.project_config.set_inner(ProjectConfig {
             project_id,
             owner: self.owner.key(),
             name,
             description,
             autthorities: authorities,
-            bump,
+            treasury_bump: bumps.treasury,
+            bump: bumps.project_config,
         });
 
         Ok(())

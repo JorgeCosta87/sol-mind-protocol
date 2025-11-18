@@ -5,8 +5,8 @@ use sol_mind_protocol_client::token_manager::{
 };
 use sol_mind_protocol_client::{
     instructions::{
-        CreateProjectBuilder, InitializeProtocolBuilder, ProjectFeesTransferBuilder,
-        ProtocolFeesTransferBuilder, UpdateFeesBuilder, UpdateSingleFeeBuilder,
+        CreateProjectBuilder, InitializeProtocolBuilder, TransferProjectFeesBuilder,
+        TransferProtocolFeesBuilder, UpdateFeesBuilder, UpdateSingleFeeBuilder,
     },
     types::{Fee, FeesStructure, Operation},
 };
@@ -57,11 +57,13 @@ impl Instructions {
         let (project_config_pda, _) =
             AccountHelper::find_project_pda(program_id, &owner, project_id);
         let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
+        let (treasury_pda, _) = AccountHelper::find_treasury_pda(program_id, &project_config_pda);
 
         let instruction = CreateProjectBuilder::new()
             .owner(owner)
             .project_config(project_config_pda)
             .protocol_config(protocol_config_pda)
+            .treasury(treasury_pda)
             .system_program(SYSTEM_PROGRAM_ID)
             .project_id(project_id)
             .name(name)
@@ -112,7 +114,7 @@ impl Instructions {
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
 
-    pub fn project_fees_transfer(
+    pub fn transfer_project_fees(
         svm: &mut LiteSVM,
         program_id: &Pubkey,
         amount: u64,
@@ -124,11 +126,14 @@ impl Instructions {
     ) -> TransactionResult {
         let (project_config_pda, _) =
             AccountHelper::find_project_pda(program_id, &owner, project_id);
+        let (treasury_pda, _) = AccountHelper::find_treasury_pda(program_id, &project_config_pda);
 
-        let instruction = ProjectFeesTransferBuilder::new()
+        let instruction = TransferProjectFeesBuilder::new()
             .owner(owner)
             .to(to)
             .project_config(project_config_pda)
+            .treasury(treasury_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
             .amount(amount)
             .instruction();
 
@@ -146,7 +151,7 @@ impl Instructions {
     ) -> TransactionResult {
         let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
 
-        let instruction = ProtocolFeesTransferBuilder::new()
+        let instruction = TransferProtocolFeesBuilder::new()
             .admin(admin)
             .to(to)
             .protocol_config(protocol_config_pda)

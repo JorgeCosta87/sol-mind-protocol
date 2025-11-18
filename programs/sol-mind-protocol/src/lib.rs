@@ -47,20 +47,15 @@ pub mod sol_mind_protocol {
         description: String,
         authorities: Vec<Pubkey>,
     ) -> Result<()> {
-        ctx.accounts.create_project(
-            project_id,
-            name,
-            description,
-            authorities,
-            ctx.bumps.project_config,
-        )
+        ctx.accounts
+            .create_project(project_id, name, description, authorities, &ctx.bumps)
     }
 
-    pub fn project_fees_transfer(ctx: Context<TransferProjectFees>, amount: u64) -> Result<()> {
+    pub fn transfer_project_fees(ctx: Context<TransferProjectFees>, amount: u64) -> Result<()> {
         ctx.accounts.transfer_project_fees(amount)
     }
 
-    pub fn protocol_fees_transfer(ctx: Context<ProtocolFeesTransfer>, amount: u64) -> Result<()> {
+    pub fn transfer_protocol_fees(ctx: Context<ProtocolFeesTransfer>, amount: u64) -> Result<()> {
         ctx.accounts.transfer_protocol_fees(amount)
     }
 }

@@ -18,6 +18,8 @@ pub struct CreateProject {
 
     pub project_config: solana_pubkey::Pubkey,
 
+    pub treasury: solana_pubkey::Pubkey,
+
     pub protocol_config: solana_pubkey::Pubkey,
 
     pub system_program: solana_pubkey::Pubkey,
@@ -37,12 +39,13 @@ impl CreateProject {
         args: CreateProjectInstructionArgs,
         remaining_accounts: &[solana_instruction::AccountMeta],
     ) -> solana_instruction::Instruction {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
         accounts.push(solana_instruction::AccountMeta::new(self.owner, true));
         accounts.push(solana_instruction::AccountMeta::new(
             self.project_config,
             false,
         ));
+        accounts.push(solana_instruction::AccountMeta::new(self.treasury, false));
         accounts.push(solana_instruction::AccountMeta::new(
             self.protocol_config,
             false,
@@ -109,12 +112,14 @@ impl CreateProjectInstructionArgs {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` project_config
-///   2. `[writable]` protocol_config
-///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   2. `[writable]` treasury
+///   3. `[writable]` protocol_config
+///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct CreateProjectBuilder {
     owner: Option<solana_pubkey::Pubkey>,
     project_config: Option<solana_pubkey::Pubkey>,
+    treasury: Option<solana_pubkey::Pubkey>,
     protocol_config: Option<solana_pubkey::Pubkey>,
     system_program: Option<solana_pubkey::Pubkey>,
     project_id: Option<u64>,
@@ -136,6 +141,11 @@ impl CreateProjectBuilder {
     #[inline(always)]
     pub fn project_config(&mut self, project_config: solana_pubkey::Pubkey) -> &mut Self {
         self.project_config = Some(project_config);
+        self
+    }
+    #[inline(always)]
+    pub fn treasury(&mut self, treasury: solana_pubkey::Pubkey) -> &mut Self {
+        self.treasury = Some(treasury);
         self
     }
     #[inline(always)]
@@ -189,6 +199,7 @@ impl CreateProjectBuilder {
         let accounts = CreateProject {
             owner: self.owner.expect("owner is not set"),
             project_config: self.project_config.expect("project_config is not set"),
+            treasury: self.treasury.expect("treasury is not set"),
             protocol_config: self.protocol_config.expect("protocol_config is not set"),
             system_program: self
                 .system_program
@@ -211,6 +222,8 @@ pub struct CreateProjectCpiAccounts<'a, 'b> {
 
     pub project_config: &'b solana_account_info::AccountInfo<'a>,
 
+    pub treasury: &'b solana_account_info::AccountInfo<'a>,
+
     pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_account_info::AccountInfo<'a>,
@@ -224,6 +237,8 @@ pub struct CreateProjectCpi<'a, 'b> {
     pub owner: &'b solana_account_info::AccountInfo<'a>,
 
     pub project_config: &'b solana_account_info::AccountInfo<'a>,
+
+    pub treasury: &'b solana_account_info::AccountInfo<'a>,
 
     pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
 
@@ -242,6 +257,7 @@ impl<'a, 'b> CreateProjectCpi<'a, 'b> {
             __program: program,
             owner: accounts.owner,
             project_config: accounts.project_config,
+            treasury: accounts.treasury,
             protocol_config: accounts.protocol_config,
             system_program: accounts.system_program,
             __args: args,
@@ -270,10 +286,14 @@ impl<'a, 'b> CreateProjectCpi<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
         remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)],
     ) -> solana_program_error::ProgramResult {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
         accounts.push(solana_instruction::AccountMeta::new(*self.owner.key, true));
         accounts.push(solana_instruction::AccountMeta::new(
             *self.project_config.key,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new(
+            *self.treasury.key,
             false,
         ));
         accounts.push(solana_instruction::AccountMeta::new(
@@ -300,10 +320,11 @@ impl<'a, 'b> CreateProjectCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.project_config.clone());
+        account_infos.push(self.treasury.clone());
         account_infos.push(self.protocol_config.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
@@ -324,8 +345,9 @@ impl<'a, 'b> CreateProjectCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` project_config
-///   2. `[writable]` protocol_config
-///   3. `[]` system_program
+///   2. `[writable]` treasury
+///   3. `[writable]` protocol_config
+///   4. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct CreateProjectCpiBuilder<'a, 'b> {
     instruction: Box<CreateProjectCpiBuilderInstruction<'a, 'b>>,
@@ -337,6 +359,7 @@ impl<'a, 'b> CreateProjectCpiBuilder<'a, 'b> {
             __program: program,
             owner: None,
             project_config: None,
+            treasury: None,
             protocol_config: None,
             system_program: None,
             project_id: None,
@@ -358,6 +381,11 @@ impl<'a, 'b> CreateProjectCpiBuilder<'a, 'b> {
         project_config: &'b solana_account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.project_config = Some(project_config);
+        self
+    }
+    #[inline(always)]
+    pub fn treasury(&mut self, treasury: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.treasury = Some(treasury);
         self
     }
     #[inline(always)]
@@ -458,6 +486,8 @@ impl<'a, 'b> CreateProjectCpiBuilder<'a, 'b> {
                 .project_config
                 .expect("project_config is not set"),
 
+            treasury: self.instruction.treasury.expect("treasury is not set"),
+
             protocol_config: self
                 .instruction
                 .protocol_config
@@ -481,6 +511,7 @@ struct CreateProjectCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
     owner: Option<&'b solana_account_info::AccountInfo<'a>>,
     project_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    treasury: Option<&'b solana_account_info::AccountInfo<'a>>,
     protocol_config: Option<&'b solana_account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
     project_id: Option<u64>,

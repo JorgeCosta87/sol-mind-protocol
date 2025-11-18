@@ -8,22 +8,26 @@
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
-pub const PROTOCOL_FEES_TRANSFER_DISCRIMINATOR: [u8; 8] = [237, 152, 50, 99, 40, 3, 134, 37];
+pub const TRANSFER_PROJECT_FEES_DISCRIMINATOR: [u8; 8] = [197, 83, 232, 147, 84, 139, 67, 254];
 
 /// Accounts.
 #[derive(Debug)]
-pub struct ProtocolFeesTransfer {
-    pub admin: solana_pubkey::Pubkey,
+pub struct TransferProjectFees {
+    pub owner: solana_pubkey::Pubkey,
 
     pub to: solana_pubkey::Pubkey,
 
-    pub protocol_config: solana_pubkey::Pubkey,
+    pub project_config: solana_pubkey::Pubkey,
+
+    pub treasury: solana_pubkey::Pubkey,
+
+    pub system_program: solana_pubkey::Pubkey,
 }
 
-impl ProtocolFeesTransfer {
+impl TransferProjectFees {
     pub fn instruction(
         &self,
-        args: ProtocolFeesTransferInstructionArgs,
+        args: TransferProjectFeesInstructionArgs,
     ) -> solana_instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
@@ -31,18 +35,23 @@ impl ProtocolFeesTransfer {
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: ProtocolFeesTransferInstructionArgs,
+        args: TransferProjectFeesInstructionArgs,
         remaining_accounts: &[solana_instruction::AccountMeta],
     ) -> solana_instruction::Instruction {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_instruction::AccountMeta::new(self.admin, true));
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_instruction::AccountMeta::new(self.owner, true));
         accounts.push(solana_instruction::AccountMeta::new(self.to, false));
         accounts.push(solana_instruction::AccountMeta::new(
-            self.protocol_config,
+            self.project_config,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new(self.treasury, false));
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
+            self.system_program,
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = ProtocolFeesTransferInstructionData::new()
+        let mut data = TransferProjectFeesInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -58,14 +67,14 @@ impl ProtocolFeesTransfer {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ProtocolFeesTransferInstructionData {
+pub struct TransferProjectFeesInstructionData {
     discriminator: [u8; 8],
 }
 
-impl ProtocolFeesTransferInstructionData {
+impl TransferProjectFeesInstructionData {
     pub fn new() -> Self {
         Self {
-            discriminator: [237, 152, 50, 99, 40, 3, 134, 37],
+            discriminator: [197, 83, 232, 147, 84, 139, 67, 254],
         }
     }
 
@@ -74,7 +83,7 @@ impl ProtocolFeesTransferInstructionData {
     }
 }
 
-impl Default for ProtocolFeesTransferInstructionData {
+impl Default for TransferProjectFeesInstructionData {
     fn default() -> Self {
         Self::new()
     }
@@ -82,39 +91,43 @@ impl Default for ProtocolFeesTransferInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ProtocolFeesTransferInstructionArgs {
+pub struct TransferProjectFeesInstructionArgs {
     pub amount: u64,
 }
 
-impl ProtocolFeesTransferInstructionArgs {
+impl TransferProjectFeesInstructionArgs {
     pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
         borsh::to_vec(self)
     }
 }
 
-/// Instruction builder for `ProtocolFeesTransfer`.
+/// Instruction builder for `TransferProjectFees`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` admin
+///   0. `[writable, signer]` owner
 ///   1. `[writable]` to
-///   2. `[writable]` protocol_config
+///   2. `[writable]` project_config
+///   3. `[writable]` treasury
+///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct ProtocolFeesTransferBuilder {
-    admin: Option<solana_pubkey::Pubkey>,
+pub struct TransferProjectFeesBuilder {
+    owner: Option<solana_pubkey::Pubkey>,
     to: Option<solana_pubkey::Pubkey>,
-    protocol_config: Option<solana_pubkey::Pubkey>,
+    project_config: Option<solana_pubkey::Pubkey>,
+    treasury: Option<solana_pubkey::Pubkey>,
+    system_program: Option<solana_pubkey::Pubkey>,
     amount: Option<u64>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
-impl ProtocolFeesTransferBuilder {
+impl TransferProjectFeesBuilder {
     pub fn new() -> Self {
         Self::default()
     }
     #[inline(always)]
-    pub fn admin(&mut self, admin: solana_pubkey::Pubkey) -> &mut Self {
-        self.admin = Some(admin);
+    pub fn owner(&mut self, owner: solana_pubkey::Pubkey) -> &mut Self {
+        self.owner = Some(owner);
         self
     }
     #[inline(always)]
@@ -123,8 +136,19 @@ impl ProtocolFeesTransferBuilder {
         self
     }
     #[inline(always)]
-    pub fn protocol_config(&mut self, protocol_config: solana_pubkey::Pubkey) -> &mut Self {
-        self.protocol_config = Some(protocol_config);
+    pub fn project_config(&mut self, project_config: solana_pubkey::Pubkey) -> &mut Self {
+        self.project_config = Some(project_config);
+        self
+    }
+    #[inline(always)]
+    pub fn treasury(&mut self, treasury: solana_pubkey::Pubkey) -> &mut Self {
+        self.treasury = Some(treasury);
+        self
+    }
+    /// `[optional account, default to '11111111111111111111111111111111']`
+    #[inline(always)]
+    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+        self.system_program = Some(system_program);
         self
     }
     #[inline(always)]
@@ -149,12 +173,16 @@ impl ProtocolFeesTransferBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = ProtocolFeesTransfer {
-            admin: self.admin.expect("admin is not set"),
+        let accounts = TransferProjectFees {
+            owner: self.owner.expect("owner is not set"),
             to: self.to.expect("to is not set"),
-            protocol_config: self.protocol_config.expect("protocol_config is not set"),
+            project_config: self.project_config.expect("project_config is not set"),
+            treasury: self.treasury.expect("treasury is not set"),
+            system_program: self
+                .system_program
+                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
         };
-        let args = ProtocolFeesTransferInstructionArgs {
+        let args = TransferProjectFeesInstructionArgs {
             amount: self.amount.clone().expect("amount is not set"),
         };
 
@@ -162,40 +190,50 @@ impl ProtocolFeesTransferBuilder {
     }
 }
 
-/// `protocol_fees_transfer` CPI accounts.
-pub struct ProtocolFeesTransferCpiAccounts<'a, 'b> {
-    pub admin: &'b solana_account_info::AccountInfo<'a>,
+/// `transfer_project_fees` CPI accounts.
+pub struct TransferProjectFeesCpiAccounts<'a, 'b> {
+    pub owner: &'b solana_account_info::AccountInfo<'a>,
 
     pub to: &'b solana_account_info::AccountInfo<'a>,
 
-    pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
+    pub project_config: &'b solana_account_info::AccountInfo<'a>,
+
+    pub treasury: &'b solana_account_info::AccountInfo<'a>,
+
+    pub system_program: &'b solana_account_info::AccountInfo<'a>,
 }
 
-/// `protocol_fees_transfer` CPI instruction.
-pub struct ProtocolFeesTransferCpi<'a, 'b> {
+/// `transfer_project_fees` CPI instruction.
+pub struct TransferProjectFeesCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_account_info::AccountInfo<'a>,
 
-    pub admin: &'b solana_account_info::AccountInfo<'a>,
+    pub owner: &'b solana_account_info::AccountInfo<'a>,
 
     pub to: &'b solana_account_info::AccountInfo<'a>,
 
-    pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
+    pub project_config: &'b solana_account_info::AccountInfo<'a>,
+
+    pub treasury: &'b solana_account_info::AccountInfo<'a>,
+
+    pub system_program: &'b solana_account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: ProtocolFeesTransferInstructionArgs,
+    pub __args: TransferProjectFeesInstructionArgs,
 }
 
-impl<'a, 'b> ProtocolFeesTransferCpi<'a, 'b> {
+impl<'a, 'b> TransferProjectFeesCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_account_info::AccountInfo<'a>,
-        accounts: ProtocolFeesTransferCpiAccounts<'a, 'b>,
-        args: ProtocolFeesTransferInstructionArgs,
+        accounts: TransferProjectFeesCpiAccounts<'a, 'b>,
+        args: TransferProjectFeesInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
-            admin: accounts.admin,
+            owner: accounts.owner,
             to: accounts.to,
-            protocol_config: accounts.protocol_config,
+            project_config: accounts.project_config,
+            treasury: accounts.treasury,
+            system_program: accounts.system_program,
             __args: args,
         }
     }
@@ -222,11 +260,19 @@ impl<'a, 'b> ProtocolFeesTransferCpi<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
         remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)],
     ) -> solana_program_error::ProgramResult {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_instruction::AccountMeta::new(*self.admin.key, true));
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        accounts.push(solana_instruction::AccountMeta::new(*self.owner.key, true));
         accounts.push(solana_instruction::AccountMeta::new(*self.to.key, false));
         accounts.push(solana_instruction::AccountMeta::new(
-            *self.protocol_config.key,
+            *self.project_config.key,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new(
+            *self.treasury.key,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
+            *self.system_program.key,
             false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -236,7 +282,7 @@ impl<'a, 'b> ProtocolFeesTransferCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = ProtocolFeesTransferInstructionData::new()
+        let mut data = TransferProjectFeesInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
@@ -247,11 +293,13 @@ impl<'a, 'b> ProtocolFeesTransferCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.admin.clone());
+        account_infos.push(self.owner.clone());
         account_infos.push(self.to.clone());
-        account_infos.push(self.protocol_config.clone());
+        account_infos.push(self.project_config.clone());
+        account_infos.push(self.treasury.clone());
+        account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -264,33 +312,37 @@ impl<'a, 'b> ProtocolFeesTransferCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `ProtocolFeesTransfer` via CPI.
+/// Instruction builder for `TransferProjectFees` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` admin
+///   0. `[writable, signer]` owner
 ///   1. `[writable]` to
-///   2. `[writable]` protocol_config
+///   2. `[writable]` project_config
+///   3. `[writable]` treasury
+///   4. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct ProtocolFeesTransferCpiBuilder<'a, 'b> {
-    instruction: Box<ProtocolFeesTransferCpiBuilderInstruction<'a, 'b>>,
+pub struct TransferProjectFeesCpiBuilder<'a, 'b> {
+    instruction: Box<TransferProjectFeesCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> ProtocolFeesTransferCpiBuilder<'a, 'b> {
+impl<'a, 'b> TransferProjectFeesCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(ProtocolFeesTransferCpiBuilderInstruction {
+        let instruction = Box::new(TransferProjectFeesCpiBuilderInstruction {
             __program: program,
-            admin: None,
+            owner: None,
             to: None,
-            protocol_config: None,
+            project_config: None,
+            treasury: None,
+            system_program: None,
             amount: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
     }
     #[inline(always)]
-    pub fn admin(&mut self, admin: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.admin = Some(admin);
+    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.owner = Some(owner);
         self
     }
     #[inline(always)]
@@ -299,11 +351,24 @@ impl<'a, 'b> ProtocolFeesTransferCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn protocol_config(
+    pub fn project_config(
         &mut self,
-        protocol_config: &'b solana_account_info::AccountInfo<'a>,
+        project_config: &'b solana_account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.protocol_config = Some(protocol_config);
+        self.instruction.project_config = Some(project_config);
+        self
+    }
+    #[inline(always)]
+    pub fn treasury(&mut self, treasury: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.treasury = Some(treasury);
+        self
+    }
+    #[inline(always)]
+    pub fn system_program(
+        &mut self,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.system_program = Some(system_program);
         self
     }
     #[inline(always)]
@@ -345,20 +410,27 @@ impl<'a, 'b> ProtocolFeesTransferCpiBuilder<'a, 'b> {
     #[allow(clippy::clone_on_copy)]
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
-        let args = ProtocolFeesTransferInstructionArgs {
+        let args = TransferProjectFeesInstructionArgs {
             amount: self.instruction.amount.clone().expect("amount is not set"),
         };
-        let instruction = ProtocolFeesTransferCpi {
+        let instruction = TransferProjectFeesCpi {
             __program: self.instruction.__program,
 
-            admin: self.instruction.admin.expect("admin is not set"),
+            owner: self.instruction.owner.expect("owner is not set"),
 
             to: self.instruction.to.expect("to is not set"),
 
-            protocol_config: self
+            project_config: self
                 .instruction
-                .protocol_config
-                .expect("protocol_config is not set"),
+                .project_config
+                .expect("project_config is not set"),
+
+            treasury: self.instruction.treasury.expect("treasury is not set"),
+
+            system_program: self
+                .instruction
+                .system_program
+                .expect("system_program is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -369,11 +441,13 @@ impl<'a, 'b> ProtocolFeesTransferCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct ProtocolFeesTransferCpiBuilderInstruction<'a, 'b> {
+struct TransferProjectFeesCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    admin: Option<&'b solana_account_info::AccountInfo<'a>>,
+    owner: Option<&'b solana_account_info::AccountInfo<'a>>,
     to: Option<&'b solana_account_info::AccountInfo<'a>>,
-    protocol_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    project_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    treasury: Option<&'b solana_account_info::AccountInfo<'a>>,
+    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
     amount: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
