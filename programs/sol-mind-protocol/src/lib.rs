@@ -8,60 +8,54 @@ pub mod helpers;
 pub mod state;
 
 pub use context::*;
-pub use helpers::*;
+pub use errors::*;
 pub use state::*;
 
 #[program]
 pub mod sol_mind_protocol {
     use super::*;
-    pub fn initialize_project(
-        ctx: Context<InitializeProject>,
+    pub fn initialize_protocol(
+        ctx: Context<InitializeProtocol>,
+        admins: Vec<Pubkey>,
+        whitelist_transfer_addrs: Vec<Pubkey>,
+        fees: FeesStructure,
+    ) -> Result<()> {
+        ctx.accounts.initialize_protocol(
+            admins,
+            whitelist_transfer_addrs,
+            fees,
+            ctx.bumps.protocol_config,
+        )
+    }
+
+    pub fn update_fees(ctx: Context<UpdateFees>, fees: FeesStructure) -> Result<()> {
+        ctx.accounts.update_fees(fees)
+    }
+
+    pub fn update_single_fee(
+        ctx: Context<UpdateFees>,
+        operation: Operation,
+        fee: Fee,
+    ) -> Result<()> {
+        ctx.accounts.update_single_fee(operation, fee)
+    }
+
+    pub fn create_project(
+        ctx: Context<CreateProject>,
         project_id: u64,
         name: String,
         description: String,
-        treasury: Pubkey,
         authorities: Vec<Pubkey>,
     ) -> Result<()> {
-        ctx.accounts.initialize_project(
-            project_id,
-            name,
-            description,
-            treasury,
-            authorities,
-            ctx.bumps.project_config,
-        )
+        ctx.accounts
+            .create_project(project_id, name, description, authorities, &ctx.bumps)
     }
 
-    pub fn create_minter_config(
-        ctx: Context<CreateMinterConfig>,
-        name: String,
-        mint_price: u64,
-        max_supply: u64,
-        assets_config: Option<AssetsConfig>,
-        uri: Option<String>,
-        plugins: Option<Vec<Vec<u8>>>,
-    ) -> Result<()> {
-        let decoded_plugins = decoded_core_plugins(plugins)?;
-
-        ctx.accounts.create_minter_config(
-            name,
-            mint_price,
-            max_supply,
-            assets_config,
-            uri,
-            decoded_plugins,
-            &ctx.bumps,
-        )
+    pub fn transfer_project_fees(ctx: Context<TransferProjectFees>, amount: u64) -> Result<()> {
+        ctx.accounts.transfer_project_fees(amount)
     }
 
-    pub fn mint_asset(
-        ctx: Context<MintAsset>,
-        name: Option<String>,
-        uri: Option<String>,
-        plugins: Option<Vec<Vec<u8>>>,
-    ) -> Result<()> {
-        let decoded_plugins = decoded_core_plugins(plugins)?;
-
-        ctx.accounts.mint_asset(name, uri, decoded_plugins)
+    pub fn transfer_protocol_fees(ctx: Context<ProtocolFeesTransfer>, amount: u64) -> Result<()> {
+        ctx.accounts.transfer_protocol_fees(amount)
     }
 }

@@ -1,0 +1,23 @@
+{
+    "idl": "target/idl/token_manager.json",
+    "before": [],
+    "scripts": {
+        "js": {
+            "from": "@codama/renderers-js",
+            "args": [
+                "clients/js/src/generated/token-manager"
+            ]
+        },
+        "rust": {
+            "from": "@codama/renderers-rust",
+            "args": [
+                "clients/rust/src/generated/token-manager",
+                {
+                    "crateFolder": "clients/rust",
+                    "formatCode": true
+                }
+            ]
+        }
+    }
+}
+

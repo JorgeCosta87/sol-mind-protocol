@@ -1,3 +1,5 @@
+pub mod mpl;
+
 use litesvm::{
     types::{TransactionMetadata, TransactionResult},
     LiteSVM,
@@ -8,6 +10,8 @@ use solana_sdk::{
     signature::{read_keypair_file, Keypair, Signer},
     transaction::Transaction,
 };
+
+pub use mpl::MplUtils;
 
 pub fn deploy_program_from_keypair(svm: &mut LiteSVM, keypair_path: &str, so_path: &str) -> Pubkey {
     let program_keypair = read_keypair_file(keypair_path).expect("Failed to read keypair file");
@@ -56,4 +60,10 @@ pub fn send_transaction(
         svm.latest_blockhash(),
     );
     svm.send_transaction(tx)
+}
+
+pub fn get_lamports(svm: &LiteSVM, address: &Pubkey) -> u64 {
+    svm.get_account(address)
+        .unwrap_or_else(|| panic!("Account not found: {}", address))
+        .lamports
 }
