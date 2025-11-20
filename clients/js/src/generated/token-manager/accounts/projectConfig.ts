@@ -59,6 +59,7 @@ export function getProjectConfigDiscriminatorBytes() {
 
 export type ProjectConfig = {
   discriminator: ReadonlyUint8Array;
+  protocolConfig: Address;
   projectId: bigint;
   owner: Address;
   name: string;
@@ -69,6 +70,7 @@ export type ProjectConfig = {
 };
 
 export type ProjectConfigArgs = {
+  protocolConfig: Address;
   projectId: number | bigint;
   owner: Address;
   name: string;
@@ -82,6 +84,7 @@ export function getProjectConfigEncoder(): Encoder<ProjectConfigArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['protocolConfig', getAddressEncoder()],
       ['projectId', getU64Encoder()],
       ['owner', getAddressEncoder()],
       ['name', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
@@ -97,6 +100,7 @@ export function getProjectConfigEncoder(): Encoder<ProjectConfigArgs> {
 export function getProjectConfigDecoder(): Decoder<ProjectConfig> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['protocolConfig', getAddressDecoder()],
     ['projectId', getU64Decoder()],
     ['owner', getAddressDecoder()],
     ['name', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],

@@ -12,6 +12,7 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getArrayDecoder,
   getArrayEncoder,
   getBytesDecoder,
@@ -46,7 +47,12 @@ import {
   type WritableSignerAccount,
 } from '@solana/kit';
 import { TOKEN_MANAGER_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+import {
+  expectAddress,
+  expectSome,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from '../shared';
 import {
   getAssetsConfigDecoder,
   getAssetsConfigEncoder,
@@ -205,7 +211,7 @@ export type CreateMinterConfigAsyncInput<
   payer: TransactionSigner<TAccountPayer>;
   authority: TransactionSigner<TAccountAuthority>;
   collection?: TransactionSigner<TAccountCollection>;
-  minterConfig: Address<TAccountMinterConfig>;
+  minterConfig?: Address<TAccountMinterConfig>;
   projectConfig: Address<TAccountProjectConfig>;
   protocolConfig?: Address<TAccountProtocolConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -277,6 +283,22 @@ export async function getCreateMinterConfigInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.minterConfig.value) {
+    accounts.minterConfig.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            109, 105, 110, 116, 101, 114, 95, 99, 111, 110, 102, 105, 103,
+          ])
+        ),
+        getAddressEncoder().encode(expectAddress(accounts.projectConfig.value)),
+        addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()).encode(
+          expectSome(args.name)
+        ),
+      ],
+    });
+  }
   if (!accounts.protocolConfig.value) {
     accounts.protocolConfig.value = await getProgramDerivedAddress({
       programAddress:

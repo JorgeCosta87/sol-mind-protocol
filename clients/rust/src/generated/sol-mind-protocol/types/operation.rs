@@ -25,6 +25,8 @@ use num_derive::FromPrimitive;
 pub enum Operation {
     CreateProject,
     CreateMinterConfig,
+    CreateTradeHub,
+    TradeNFT,
     MintAsset,
     Generic,
 }

@@ -49,10 +49,15 @@ fn test_create_minter_config_without_collection() {
 
             let protocol_config =
                 AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
+            let (project_config_pda, _) = AccountHelper::find_project_pda(
+                &fixture.program_id_sol_mind,
+                &fixture.project_owner.pubkey(),
+                PROJECT_1_ID,
+            );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
                 &fixture.program_id_token_manager,
-                PROJECT_1_ID,
+                &project_config_pda,
                 &MINTER_NAME,
             );
             let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
@@ -161,10 +166,15 @@ fn test_create_minter_config_with_collection() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
+            let (project_config_pda, _) = AccountHelper::find_project_pda(
+                &fixture.program_id_sol_mind,
+                &fixture.project_owner.pubkey(),
+                PROJECT_1_ID,
+            );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
                 &fixture.program_id_token_manager,
-                PROJECT_1_ID,
+                &project_config_pda,
                 &MINTER_NAME,
             );
 
@@ -248,10 +258,15 @@ fn test_create_minter_config_with_collection_with_plugins() {
                 &fixture.project_owner.pubkey(),
                 PROJECT_1_ID,
             );
+            let (project_config_pda, _) = AccountHelper::find_project_pda(
+                &fixture.program_id_sol_mind,
+                &fixture.project_owner.pubkey(),
+                PROJECT_1_ID,
+            );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
                 &fixture.program_id_token_manager,
-                PROJECT_1_ID,
+                &project_config_pda,
                 &MINTER_NAME,
             );
             let asset = MplUtils::get_collection(&fixture.svm, &collection.pubkey());
@@ -317,10 +332,15 @@ fn test_mint_asset_without_assets_config_and_collection() {
 
             let protocol_config =
                 AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
+            let (project_config_pda, _) = AccountHelper::find_project_pda(
+                &fixture.program_id_sol_mind,
+                &fixture.project_owner.pubkey(),
+                PROJECT_1_ID,
+            );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
                 &fixture.program_id_token_manager,
-                PROJECT_1_ID,
+                &project_config_pda,
                 &MINTER_NAME,
             );
             let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
@@ -386,10 +406,15 @@ fn test_mint_asset_with_collection() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
+            let (project_config_pda, _) = AccountHelper::find_project_pda(
+                &fixture.program_id_sol_mind,
+                &fixture.project_owner.pubkey(),
+                PROJECT_1_ID,
+            );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
                 &fixture.program_id_token_manager,
-                PROJECT_1_ID,
+                &project_config_pda,
                 &MINTER_NAME,
             );
             let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
@@ -482,10 +507,15 @@ fn test_mint_asset_exceeds_max_supply() {
         ],
     );
 
+    let (project_config_pda, _) = AccountHelper::find_project_pda(
+        &fixture.program_id_sol_mind,
+        &fixture.project_owner.pubkey(),
+        PROJECT_1_ID,
+    );
     let minter_config = AccountHelper::get_minter_config(
         &fixture.svm,
         &fixture.program_id_token_manager,
-        PROJECT_1_ID,
+        &project_config_pda,
         &MINTER_NAME,
     );
 

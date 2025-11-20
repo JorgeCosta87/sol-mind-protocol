@@ -26,7 +26,9 @@ impl<'info> UpdateFees<'info> {
         match operation {
             Operation::CreateProject => self.protocol_config.fees.create_project = fee,
             Operation::CreateMinterConfig => self.protocol_config.fees.create_minter_config = fee,
+            Operation::CreateTradeHub => self.protocol_config.fees.create_trade_hub = fee,
             Operation::MintAsset => self.protocol_config.fees.mint_asset = fee,
+            Operation::TradeNFT => self.protocol_config.fees.trade_nft = fee,
             Operation::Generic => self.protocol_config.fees.generic_operation = fee,
         }
         Ok(())

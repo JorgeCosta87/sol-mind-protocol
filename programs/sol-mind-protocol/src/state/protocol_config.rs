@@ -17,6 +17,8 @@ pub enum FeeType {
 pub struct FeesStructure {
     pub create_project: Fee,
     pub create_minter_config: Fee,
+    pub create_trade_hub: Fee,
+    pub trade_nft: Fee,
     pub mint_asset: Fee,
     pub generic_operation: Fee,
 }
@@ -25,6 +27,8 @@ pub struct FeesStructure {
 pub enum Operation {
     CreateProject,
     CreateMinterConfig,
+    CreateTradeHub,
+    TradeNFT,
     MintAsset,
     Generic,
 }
@@ -53,7 +57,9 @@ impl ProtocolConfig {
         match operation {
             Operation::CreateProject => self.fees.create_project,
             Operation::CreateMinterConfig => self.fees.create_minter_config,
+            Operation::CreateTradeHub => self.fees.create_trade_hub,
             Operation::MintAsset => self.fees.mint_asset,
+            Operation::TradeNFT => self.fees.trade_nft,
             Operation::Generic => self.fees.generic_operation,
         }
     }

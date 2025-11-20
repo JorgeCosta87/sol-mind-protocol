@@ -19,7 +19,6 @@ use super::accounts::AccountHelper;
 pub struct Instructions;
 
 impl Instructions {
-    // Sol-mind-protocol instructions
     pub fn initialize_protocol(
         svm: &mut LiteSVM,
         program_id: &Pubkey,
@@ -29,7 +28,7 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
+        let protocol_config_pda = AccountHelper::find_protocol_config_pda(program_id).0;
 
         let instruction = InitializeProtocolBuilder::new()
             .payer(payer)
@@ -54,10 +53,9 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (project_config_pda, _) =
-            AccountHelper::find_project_pda(program_id, &owner, project_id);
-        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
-        let (treasury_pda, _) = AccountHelper::find_treasury_pda(program_id, &project_config_pda);
+        let protocol_config_pda = AccountHelper::find_protocol_config_pda(program_id).0;
+        let project_config_pda = AccountHelper::find_project_pda(program_id, &owner, project_id).0;
+        let treasury_pda = AccountHelper::find_treasury_pda(program_id, &project_config_pda).0;
 
         let instruction = CreateProjectBuilder::new()
             .owner(owner)
@@ -82,7 +80,7 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
+        let protocol_config_pda = AccountHelper::find_protocol_config_pda(program_id).0;
 
         let instruction = UpdateFeesBuilder::new()
             .admin(admin)
@@ -102,7 +100,7 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
+        let protocol_config_pda = AccountHelper::find_protocol_config_pda(program_id).0;
 
         let instruction = UpdateSingleFeeBuilder::new()
             .admin(admin)
@@ -124,9 +122,8 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (project_config_pda, _) =
-            AccountHelper::find_project_pda(program_id, &owner, project_id);
-        let (treasury_pda, _) = AccountHelper::find_treasury_pda(program_id, &project_config_pda);
+        let project_config_pda = AccountHelper::find_project_pda(program_id, &owner, project_id).0;
+        let treasury_pda = AccountHelper::find_treasury_pda(program_id, &project_config_pda).0;
 
         let instruction = TransferProjectFeesBuilder::new()
             .owner(owner)
@@ -149,7 +146,7 @@ impl Instructions {
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda(program_id);
+        let protocol_config_pda = AccountHelper::find_protocol_config_pda(program_id).0;
 
         let instruction = TransferProtocolFeesBuilder::new()
             .admin(admin)
@@ -178,12 +175,16 @@ impl Instructions {
         collection: Option<Pubkey>,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (protocol_config_pda, _) =
-            AccountHelper::find_protocol_config_pda(sol_mind_protocol_program_id);
-        let (project_config_pda, _) =
-            AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id);
-        let (minter_config_pda, _) =
-            AccountHelper::find_minter_config_pda(token_manager_program_id, project_id, &name);
+        let protocol_config_pda =
+            AccountHelper::find_protocol_config_pda(sol_mind_protocol_program_id).0;
+        let project_config_pda =
+            AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id).0;
+        let minter_config_pda = AccountHelper::find_minter_config_pda(
+            token_manager_program_id,
+            &project_config_pda,
+            &name,
+        )
+        .0;
 
         let mut builder = CreateMinterConfigBuilder::new();
 
@@ -228,15 +229,16 @@ impl Instructions {
         collection: Option<Pubkey>,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let (protocol_config_pda, _) =
-            AccountHelper::find_protocol_config_pda(sol_mind_protocol_program_id);
-        let (project_config_pda, _) =
-            AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id);
-        let (minter_config_pda, _) = AccountHelper::find_minter_config_pda(
+        let protocol_config_pda =
+            AccountHelper::find_protocol_config_pda(sol_mind_protocol_program_id).0;
+        let project_config_pda =
+            AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id).0;
+        let minter_config_pda = AccountHelper::find_minter_config_pda(
             token_manager_program_id,
-            project_id,
+            &project_config_pda,
             minter_config_name,
-        );
+        )
+        .0;
 
         let mut builder = MintAssetBuilder::new();
 

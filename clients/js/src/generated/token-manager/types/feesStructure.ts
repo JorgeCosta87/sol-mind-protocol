@@ -19,6 +19,8 @@ import { getFeeDecoder, getFeeEncoder, type Fee, type FeeArgs } from '.';
 export type FeesStructure = {
   createProject: Fee;
   createMinterConfig: Fee;
+  createTradeHub: Fee;
+  tradeNft: Fee;
   mintAsset: Fee;
   genericOperation: Fee;
 };
@@ -26,6 +28,8 @@ export type FeesStructure = {
 export type FeesStructureArgs = {
   createProject: FeeArgs;
   createMinterConfig: FeeArgs;
+  createTradeHub: FeeArgs;
+  tradeNft: FeeArgs;
   mintAsset: FeeArgs;
   genericOperation: FeeArgs;
 };
@@ -34,6 +38,8 @@ export function getFeesStructureEncoder(): FixedSizeEncoder<FeesStructureArgs> {
   return getStructEncoder([
     ['createProject', getFeeEncoder()],
     ['createMinterConfig', getFeeEncoder()],
+    ['createTradeHub', getFeeEncoder()],
+    ['tradeNft', getFeeEncoder()],
     ['mintAsset', getFeeEncoder()],
     ['genericOperation', getFeeEncoder()],
   ]);
@@ -43,6 +49,8 @@ export function getFeesStructureDecoder(): FixedSizeDecoder<FeesStructure> {
   return getStructDecoder([
     ['createProject', getFeeDecoder()],
     ['createMinterConfig', getFeeDecoder()],
+    ['createTradeHub', getFeeDecoder()],
+    ['tradeNft', getFeeDecoder()],
     ['mintAsset', getFeeDecoder()],
     ['genericOperation', getFeeDecoder()],
   ]);

@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(InitSpace)]
 pub struct ProjectConfig {
+    pub protocol_config: Pubkey,
     pub project_id: u64,
     pub owner: Pubkey,
     #[max_len(64)]

@@ -13,6 +13,11 @@ use solana_pubkey::Pubkey;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ProjectConfig {
     pub discriminator: [u8; 8],
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub protocol_config: Pubkey,
     pub project_id: u64,
     #[cfg_attr(
         feature = "serde",

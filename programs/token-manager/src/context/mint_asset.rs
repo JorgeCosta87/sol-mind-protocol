@@ -28,7 +28,7 @@ pub struct MintAsset<'info> {
         mut,
         seeds = [
             b"minter_config",
-            project_config.project_id.to_le_bytes().as_ref(),
+            project_config.key().as_ref(),
             minter_config.name.as_bytes(),
         ],
         bump = minter_config.bump,
@@ -133,11 +133,11 @@ impl<'info> MintAsset<'info> {
             builder.plugins(plugins);
         }
 
-        let project_id_bytes = self.project_config.project_id.to_le_bytes();
+        let project_config_key = self.project_config.to_account_info().key.as_ref();
         let name_bytes = self.minter_config.name.as_bytes();
         let seeds = &[
             b"minter_config",
-            project_id_bytes.as_ref(),
+            project_config_key,
             name_bytes,
             &[self.minter_config.bump],
         ];

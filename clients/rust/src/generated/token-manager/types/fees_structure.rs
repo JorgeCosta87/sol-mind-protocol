@@ -14,6 +14,8 @@ use borsh::BorshSerialize;
 pub struct FeesStructure {
     pub create_project: Fee,
     pub create_minter_config: Fee,
+    pub create_trade_hub: Fee,
+    pub trade_nft: Fee,
     pub mint_asset: Fee,
     pub generic_operation: Fee,
 }

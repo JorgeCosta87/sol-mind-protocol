@@ -18,6 +18,8 @@ import {
 export enum Operation {
   CreateProject,
   CreateMinterConfig,
+  CreateTradeHub,
+  TradeNFT,
   MintAsset,
   Generic,
 }

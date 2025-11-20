@@ -63,6 +63,7 @@ impl<'info> CreateProject<'info> {
         )?;
 
         self.project_config.set_inner(ProjectConfig {
+            protocol_config: self.protocol_config.key(),
             project_id,
             owner: self.owner.key(),
             name,

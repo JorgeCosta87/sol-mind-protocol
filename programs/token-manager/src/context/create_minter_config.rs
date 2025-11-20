@@ -26,7 +26,7 @@ pub struct CreateMinterConfig<'info> {
         payer = payer,
         seeds = [
             b"minter_config",
-            project_config.project_id.to_le_bytes().as_ref(),
+            project_config.key().as_ref(),
             name.as_bytes(),
         ],
         bump,
@@ -90,7 +90,6 @@ impl<'info> CreateMinterConfig<'info> {
             let plugins = plugins.unwrap_or_default();
 
             let project_id_bytes = self.project_config.project_id.to_le_bytes();
-
             let name_bytes = name.as_bytes();
             let seeds = &[
                 b"minter_config",

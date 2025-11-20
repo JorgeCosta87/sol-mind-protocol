@@ -52,11 +52,15 @@ impl AccountHelper {
 
     pub fn find_minter_config_pda(
         token_manager_program_id: &Pubkey,
-        project_id: u64,
+        project_config_pda: &Pubkey,
         name: &str,
     ) -> (Pubkey, u8) {
         Pubkey::try_find_program_address(
-            &[b"minter_config", &project_id.to_le_bytes(), name.as_bytes()],
+            &[
+                b"minter_config",
+                project_config_pda.as_ref(),
+                name.as_bytes(),
+            ],
             token_manager_program_id,
         )
         .unwrap()
@@ -65,10 +69,11 @@ impl AccountHelper {
     pub fn get_minter_config(
         svm: &LiteSVM,
         token_manager_program_id: &Pubkey,
-        project_id: u64,
+        project_config_pda: &Pubkey,
         name: &str,
     ) -> MinterConfig {
-        let addr = Self::find_minter_config_pda(token_manager_program_id, project_id, name).0;
+        let addr =
+            Self::find_minter_config_pda(token_manager_program_id, project_config_pda, name).0;
 
         let account = svm
             .get_account(&addr)
