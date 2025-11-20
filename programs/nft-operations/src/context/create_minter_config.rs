@@ -114,4 +114,3 @@ impl<'info> CreateMinterConfig<'info> {
         Ok(())
     }
 }
-

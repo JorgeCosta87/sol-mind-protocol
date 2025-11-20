@@ -155,4 +155,3 @@ impl<'info> MintAsset<'info> {
         Ok(())
     }
 }
-

@@ -51,10 +51,7 @@ pub mod nft_operations {
         name: String,
         fee_bps: u64,
     ) -> Result<()> {
-        ctx.accounts.create_trade_hub(
-            name,
-            fee_bps,
-            ctx.bumps.trade_hub,
-        )
+        ctx.accounts
+            .create_trade_hub(name, fee_bps, ctx.bumps.trade_hub)
     }
 }

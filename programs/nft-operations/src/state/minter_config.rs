@@ -20,4 +20,3 @@ pub struct MinterConfig {
     pub collection: Option<Pubkey>,
     pub bump: u8,
 }
-
