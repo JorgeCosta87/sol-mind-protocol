@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 #[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Default)]
 pub struct AssetsConfig {
-    #[max_len(64)]
+    #[max_len(32)]
     pub asset_name_prefix: String,
     #[max_len(200)]
     pub asset_uri_prefix: String,
@@ -11,7 +11,7 @@ pub struct AssetsConfig {
 #[account]
 #[derive(InitSpace)]
 pub struct MinterConfig {
-    #[max_len(64)]
+    #[max_len(32)]
     pub name: String,
     pub mint_price: u64,
     pub mints_counter: u64,
@@ -20,3 +20,4 @@ pub struct MinterConfig {
     pub collection: Option<Pubkey>,
     pub bump: u8,
 }
+

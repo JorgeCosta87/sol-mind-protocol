@@ -24,7 +24,7 @@ fn test_create_minter_config_without_collection() {
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
@@ -56,7 +56,7 @@ fn test_create_minter_config_without_collection() {
             );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
-                &fixture.program_id_token_manager,
+                &fixture.program_id_nft_operations,
                 &project_config_pda,
                 &MINTER_NAME,
             );
@@ -94,7 +94,7 @@ fn test_create_minter_config_with_unauthorized_authority() {
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
@@ -142,7 +142,7 @@ fn test_create_minter_config_with_collection() {
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
@@ -173,7 +173,7 @@ fn test_create_minter_config_with_collection() {
             );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
-                &fixture.program_id_token_manager,
+                &fixture.program_id_nft_operations,
                 &project_config_pda,
                 &MINTER_NAME,
             );
@@ -228,7 +228,7 @@ fn test_create_minter_config_with_collection_with_plugins() {
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
@@ -265,7 +265,7 @@ fn test_create_minter_config_with_collection_with_plugins() {
             );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
-                &fixture.program_id_token_manager,
+                &fixture.program_id_nft_operations,
                 &project_config_pda,
                 &MINTER_NAME,
             );
@@ -305,7 +305,7 @@ fn test_mint_asset_without_assets_config_and_collection() {
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
@@ -339,7 +339,7 @@ fn test_mint_asset_without_assets_config_and_collection() {
             );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
-                &fixture.program_id_token_manager,
+                &fixture.program_id_nft_operations,
                 &project_config_pda,
                 &MINTER_NAME,
             );
@@ -381,7 +381,7 @@ fn test_mint_asset_with_collection() {
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
@@ -413,7 +413,7 @@ fn test_mint_asset_with_collection() {
             );
             let minter_config = AccountHelper::get_minter_config(
                 &fixture.svm,
-                &fixture.program_id_token_manager,
+                &fixture.program_id_nft_operations,
                 &project_config_pda,
                 &MINTER_NAME,
             );
@@ -457,7 +457,7 @@ fn test_mint_asset_exceeds_max_supply() {
 
         let result = Instructions::mint_asset(
             &mut fixture.svm,
-            &fixture.program_id_token_manager,
+            &fixture.program_id_nft_operations,
             &fixture.program_id_sol_mind,
             MINTER_NAME,
             Some(format!("{} #{}", ASSET_NAME, i)),
@@ -486,7 +486,7 @@ fn test_mint_asset_exceeds_max_supply() {
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
@@ -514,7 +514,7 @@ fn test_mint_asset_exceeds_max_supply() {
     );
     let minter_config = AccountHelper::get_minter_config(
         &fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &project_config_pda,
         &MINTER_NAME,
     );
@@ -552,7 +552,7 @@ fn test_mint_asset_with_unauthorized_authority() {
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
@@ -596,7 +596,7 @@ fn test_create_duplicate_minter_config_name() {
 
     let result1 = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
@@ -622,7 +622,7 @@ fn test_create_duplicate_minter_config_name() {
 
     let result2 = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_token_manager,
+        &fixture.program_id_nft_operations,
         &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ");
+declare_id!("EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24");
 
 pub mod context;
 pub mod errors;
@@ -12,7 +12,7 @@ pub use helpers::*;
 pub use state::*;
 
 #[program]
-pub mod token_manager {
+pub mod nft_operations {
     use super::*;
     pub fn create_minter_config(
         ctx: Context<CreateMinterConfig>,
@@ -44,5 +44,17 @@ pub mod token_manager {
         let decoded_plugins = decoded_core_plugins(plugins)?;
 
         ctx.accounts.mint_asset(name, uri, decoded_plugins)
+    }
+
+    pub fn create_trade_hub(
+        ctx: Context<CreateTradeHub>,
+        name: String,
+        fee_bps: u64,
+    ) -> Result<()> {
+        ctx.accounts.create_trade_hub(
+            name,
+            fee_bps,
+            ctx.bumps.trade_hub,
+        )
     }
 }

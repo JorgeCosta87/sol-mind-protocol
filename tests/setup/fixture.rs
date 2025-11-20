@@ -13,7 +13,7 @@ use super::test_data::*;
 pub struct TestFixture {
     pub svm: LiteSVM,
     pub program_id_sol_mind: Pubkey,
-    pub program_id_token_manager: Pubkey,
+    pub program_id_nft_operations: Pubkey,
     pub payer: Keypair,
     pub admin_1: Keypair,
     pub admin_2: Keypair,
@@ -39,10 +39,10 @@ impl TestFixture {
             SOL_MIND_PROTOCOL_KEYPAIR_PATH,
             SOL_MIND_PROTOCOL_SO_PATH,
         );
-        let program_id_token_manager = utils::deploy_program_from_keypair(
+        let program_id_nft_operations = utils::deploy_program_from_keypair(
             &mut svm,
-            TOKEN_MANAGER_KEYPAIR_PATH,
-            TOKEN_MANAGER_SO_PATH,
+            NFT_OPERATIONS_KEYPAIR_PATH,
+            NFT_OPERATIONS_SO_PATH,
         );
 
         svm.airdrop(&payer.pubkey(), 10 * LAMPORTS_PER_SOL)
@@ -54,7 +54,7 @@ impl TestFixture {
         Self {
             svm,
             program_id_sol_mind,
-            program_id_token_manager,
+            program_id_nft_operations,
             payer,
             admin_1,
             admin_2,
@@ -155,7 +155,7 @@ impl TestFixture {
 
         Instructions::create_minter_config(
             &mut self.svm,
-            &self.program_id_token_manager,
+            &self.program_id_nft_operations,
             &self.program_id_sol_mind,
             MINTER_NAME.to_string(),
             MINT_PRICE,

@@ -1,6 +1,6 @@
 use litesvm::LiteSVM;
 use sol_mind_protocol_client::accounts::{ProjectConfig, ProtocolConfig};
-use sol_mind_protocol_client::token_manager::accounts::MinterConfig;
+use sol_mind_protocol_client::nft_operations::accounts::MinterConfig;
 use solana_pubkey::Pubkey;
 
 pub struct AccountHelper;
@@ -51,7 +51,7 @@ impl AccountHelper {
     }
 
     pub fn find_minter_config_pda(
-        token_manager_program_id: &Pubkey,
+        nft_operations_program_id: &Pubkey,
         project_config_pda: &Pubkey,
         name: &str,
     ) -> (Pubkey, u8) {
@@ -61,19 +61,19 @@ impl AccountHelper {
                 project_config_pda.as_ref(),
                 name.as_bytes(),
             ],
-            token_manager_program_id,
+            nft_operations_program_id,
         )
         .unwrap()
     }
 
     pub fn get_minter_config(
         svm: &LiteSVM,
-        token_manager_program_id: &Pubkey,
+        nft_operations_program_id: &Pubkey,
         project_config_pda: &Pubkey,
         name: &str,
     ) -> MinterConfig {
         let addr =
-            Self::find_minter_config_pda(token_manager_program_id, project_config_pda, name).0;
+            Self::find_minter_config_pda(nft_operations_program_id, project_config_pda, name).0;
 
         let account = svm
             .get_account(&addr)

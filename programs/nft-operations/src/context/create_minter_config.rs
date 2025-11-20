@@ -89,11 +89,11 @@ impl<'info> CreateMinterConfig<'info> {
             let uri = uri.ok_or(error!(ErrorCode::RequiredUri))?;
             let plugins = plugins.unwrap_or_default();
 
-            let project_id_bytes = self.project_config.project_id.to_le_bytes();
+            let project_config_key = self.project_config.key();
             let name_bytes = name.as_bytes();
             let seeds = &[
                 b"minter_config",
-                project_id_bytes.as_ref(),
+                project_config_key.as_ref(),
                 name_bytes,
                 &[self.minter_config.bump],
             ];
@@ -114,3 +114,4 @@ impl<'info> CreateMinterConfig<'info> {
         Ok(())
     }
 }
+

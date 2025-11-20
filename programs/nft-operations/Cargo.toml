@@ -1,12 +1,12 @@
 [package]
-name = "token-manager"
+name = "nft-operations"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "token_manager"
+name = "core"
 
 [features]
 default = []

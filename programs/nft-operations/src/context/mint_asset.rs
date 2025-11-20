@@ -133,11 +133,11 @@ impl<'info> MintAsset<'info> {
             builder.plugins(plugins);
         }
 
-        let project_config_key = self.project_config.to_account_info().key.as_ref();
+        let project_config_key = self.project_config.key();
         let name_bytes = self.minter_config.name.as_bytes();
         let seeds = &[
             b"minter_config",
-            project_config_key,
+            project_config_key.as_ref(),
             name_bytes,
             &[self.minter_config.bump],
         ];
@@ -155,3 +155,4 @@ impl<'info> MintAsset<'info> {
         Ok(())
     }
 }
+

@@ -1,5 +1,5 @@
 use litesvm::{types::TransactionResult, LiteSVM};
-use sol_mind_protocol_client::token_manager::{
+use sol_mind_protocol_client::nft_operations::{
     instructions::{CreateMinterConfigBuilder, MintAssetBuilder},
     types::AssetsConfig,
 };
@@ -160,7 +160,7 @@ impl Instructions {
 
     pub fn create_minter_config(
         svm: &mut LiteSVM,
-        token_manager_program_id: &Pubkey,
+        nft_operations_program_id: &Pubkey,
         sol_mind_protocol_program_id: &Pubkey,
         name: String,
         mint_price: u64,
@@ -180,7 +180,7 @@ impl Instructions {
         let project_config_pda =
             AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id).0;
         let minter_config_pda = AccountHelper::find_minter_config_pda(
-            token_manager_program_id,
+            nft_operations_program_id,
             &project_config_pda,
             &name,
         )
@@ -214,7 +214,7 @@ impl Instructions {
 
     pub fn mint_asset(
         svm: &mut LiteSVM,
-        token_manager_program_id: &Pubkey,
+        nft_operations_program_id: &Pubkey,
         sol_mind_protocol_program_id: &Pubkey,
         minter_config_name: &str,
         name: Option<String>,
@@ -234,7 +234,7 @@ impl Instructions {
         let project_config_pda =
             AccountHelper::find_project_pda(sol_mind_protocol_program_id, &owner, project_id).0;
         let minter_config_pda = AccountHelper::find_minter_config_pda(
-            token_manager_program_id,
+            nft_operations_program_id,
             &project_config_pda,
             minter_config_name,
         )
