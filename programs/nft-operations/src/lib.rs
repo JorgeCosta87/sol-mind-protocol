@@ -55,11 +55,7 @@ pub mod nft_operations {
             .create_trade_hub(name, fee_bps, ctx.bumps.trade_hub)
     }
 
-    pub fn list_asset(
-        ctx: Context<ListAsset>,
-        price: u64,
-    ) -> Result<()> {
-        ctx.accounts
-            .create_listing(price, ctx.bumps.listing)
+    pub fn list_asset(ctx: Context<ListAsset>, price: u64) -> Result<()> {
+        ctx.accounts.create_listing(price, ctx.bumps.listing)
     }
 }

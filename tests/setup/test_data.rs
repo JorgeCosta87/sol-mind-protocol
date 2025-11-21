@@ -20,6 +20,10 @@ pub const COLLECTION_URI: &str = "https://";
 pub const ASSET_NAME: &str = "Test Asset";
 pub const ASSET_URI: &str = "https://";
 
+pub const TRADE_HUB_NAME: &str = "Test Trade Hub";
+pub const TRADE_HUB_FEE_BPS: u64 = 350;
+pub const LISTING_PRICE: u64 = 100_000_000;
+
 pub const FEE_CREATE_PROJECT_AMOUNT: u64 = 1_000_000;
 pub const FEE_CREATE_MINTER_CONFIG_AMOUNT: u64 = 500_000;
 pub const FEE_MINT_ASSET_AMOUNT: u64 = 50_000;

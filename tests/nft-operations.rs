@@ -4,6 +4,7 @@ use anchor_lang::AnchorSerialize;
 use mpl_core::types::{Creator, Plugin, PluginAuthority, PluginAuthorityPair, Royalties};
 use solana_program::pubkey::Pubkey as ProgramPubkey;
 use solana_sdk::{
+    clock::Clock,
     native_token::LAMPORTS_PER_SOL,
     signature::{Keypair, Signer},
 };
@@ -18,14 +19,11 @@ fn test_create_minter_config_without_collection() {
         .with_initialize_protocol()
         .with_initialize_project(PROJECT_1_ID);
 
-    let (protocol_config_pda, _) =
-        AccountHelper::find_protocol_config_pda(&fixture.program_id_sol_mind);
+    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda();
     let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
         MAX_SUPPLY,
@@ -47,19 +45,11 @@ fn test_create_minter_config_without_collection() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let protocol_config =
-                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
-            let (project_config_pda, _) = AccountHelper::find_project_pda(
-                &fixture.program_id_sol_mind,
-                &fixture.project_owner.pubkey(),
-                PROJECT_1_ID,
-            );
-            let minter_config = AccountHelper::get_minter_config(
-                &fixture.svm,
-                &fixture.program_id_nft_operations,
-                &project_config_pda,
-                &MINTER_NAME,
-            );
+            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm);
+            let (project_config_pda, _) =
+                AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
+            let minter_config =
+                AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
             let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
             assert_eq!(minter_config.name, MINTER_NAME);
@@ -94,8 +84,6 @@ fn test_create_minter_config_with_unauthorized_authority() {
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
         MAX_SUPPLY,
@@ -142,8 +130,6 @@ fn test_create_minter_config_with_collection() {
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
         MAX_SUPPLY,
@@ -166,17 +152,10 @@ fn test_create_minter_config_with_collection() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let (project_config_pda, _) = AccountHelper::find_project_pda(
-                &fixture.program_id_sol_mind,
-                &fixture.project_owner.pubkey(),
-                PROJECT_1_ID,
-            );
-            let minter_config = AccountHelper::get_minter_config(
-                &fixture.svm,
-                &fixture.program_id_nft_operations,
-                &project_config_pda,
-                &MINTER_NAME,
-            );
+            let (project_config_pda, _) =
+                AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
+            let minter_config =
+                AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
 
             assert_eq!(minter_config.name, MINTER_NAME);
             assert_eq!(minter_config.mint_price, MINT_PRICE);
@@ -228,8 +207,6 @@ fn test_create_minter_config_with_collection_with_plugins() {
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
         MAX_SUPPLY,
@@ -254,21 +231,13 @@ fn test_create_minter_config_with_collection_with_plugins() {
 
             let _project_config = AccountHelper::get_project_config(
                 &fixture.svm,
-                &fixture.program_id_sol_mind,
                 &fixture.project_owner.pubkey(),
                 PROJECT_1_ID,
             );
-            let (project_config_pda, _) = AccountHelper::find_project_pda(
-                &fixture.program_id_sol_mind,
-                &fixture.project_owner.pubkey(),
-                PROJECT_1_ID,
-            );
-            let minter_config = AccountHelper::get_minter_config(
-                &fixture.svm,
-                &fixture.program_id_nft_operations,
-                &project_config_pda,
-                &MINTER_NAME,
-            );
+            let (project_config_pda, _) =
+                AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
+            let minter_config =
+                AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
             let asset = MplUtils::get_collection(&fixture.svm, &collection.pubkey());
 
             println!("plugins: {:?}", asset.plugin_list);
@@ -294,10 +263,9 @@ fn test_mint_asset_without_assets_config_and_collection() {
         .with_metaplex_core_program()
         .with_initialize_protocol()
         .with_initialize_project(PROJECT_1_ID)
-        .with_minter_config(PROJECT_1_ID, None);
+        .with_create_minter_config(PROJECT_1_ID, None);
 
-    let (protocol_config_pda, _) =
-        AccountHelper::find_protocol_config_pda(&fixture.program_id_sol_mind);
+    let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda();
     let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
     let asset_owner = Keypair::new();
@@ -305,8 +273,6 @@ fn test_mint_asset_without_assets_config_and_collection() {
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
         Some(ASSET_URI.to_string()),
@@ -330,19 +296,11 @@ fn test_mint_asset_without_assets_config_and_collection() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let protocol_config =
-                AccountHelper::get_protocol_config(&fixture.svm, &fixture.program_id_sol_mind);
-            let (project_config_pda, _) = AccountHelper::find_project_pda(
-                &fixture.program_id_sol_mind,
-                &fixture.project_owner.pubkey(),
-                PROJECT_1_ID,
-            );
-            let minter_config = AccountHelper::get_minter_config(
-                &fixture.svm,
-                &fixture.program_id_nft_operations,
-                &project_config_pda,
-                &MINTER_NAME,
-            );
+            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm);
+            let (project_config_pda, _) =
+                AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
+            let minter_config =
+                AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
             let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
             let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
 
@@ -374,15 +332,13 @@ fn test_mint_asset_with_collection() {
         .with_metaplex_core_program()
         .with_initialize_protocol()
         .with_initialize_project(PROJECT_1_ID)
-        .with_minter_config(PROJECT_1_ID, Some(&collection));
+        .with_create_minter_config(PROJECT_1_ID, Some(&collection));
 
     let asset_owner = Keypair::new();
     let mint = Keypair::new();
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
         Some(ASSET_URI.to_string()),
@@ -406,17 +362,10 @@ fn test_mint_asset_with_collection() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let (project_config_pda, _) = AccountHelper::find_project_pda(
-                &fixture.program_id_sol_mind,
-                &fixture.project_owner.pubkey(),
-                PROJECT_1_ID,
-            );
-            let minter_config = AccountHelper::get_minter_config(
-                &fixture.svm,
-                &fixture.program_id_nft_operations,
-                &project_config_pda,
-                &MINTER_NAME,
-            );
+            let (project_config_pda, _) =
+                AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
+            let minter_config =
+                AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
             let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
 
             assert_eq!(minter_config.collection.unwrap(), collection.pubkey());
@@ -449,7 +398,7 @@ fn test_mint_asset_exceeds_max_supply() {
         .with_metaplex_core_program()
         .with_initialize_protocol()
         .with_initialize_project(PROJECT_1_ID)
-        .with_minter_config(PROJECT_1_ID, None);
+        .with_create_minter_config(PROJECT_1_ID, None);
 
     for i in 0..MAX_SUPPLY {
         let asset_owner = Keypair::new();
@@ -457,8 +406,6 @@ fn test_mint_asset_exceeds_max_supply() {
 
         let result = Instructions::mint_asset(
             &mut fixture.svm,
-            &fixture.program_id_nft_operations,
-            &fixture.program_id_sol_mind,
             MINTER_NAME,
             Some(format!("{} #{}", ASSET_NAME, i)),
             Some(ASSET_URI.to_string()),
@@ -486,8 +433,6 @@ fn test_mint_asset_exceeds_max_supply() {
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
         Some(ASSET_URI.to_string()),
@@ -507,17 +452,10 @@ fn test_mint_asset_exceeds_max_supply() {
         ],
     );
 
-    let (project_config_pda, _) = AccountHelper::find_project_pda(
-        &fixture.program_id_sol_mind,
-        &fixture.project_owner.pubkey(),
-        PROJECT_1_ID,
-    );
-    let minter_config = AccountHelper::get_minter_config(
-        &fixture.svm,
-        &fixture.program_id_nft_operations,
-        &project_config_pda,
-        &MINTER_NAME,
-    );
+    let (project_config_pda, _) =
+        AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
+    let minter_config =
+        AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
 
     assert!(result.is_err(), "Minting beyond max_supply should fail");
 
@@ -539,7 +477,7 @@ fn test_mint_asset_with_unauthorized_authority() {
         .with_metaplex_core_program()
         .with_initialize_protocol()
         .with_initialize_project(PROJECT_1_ID)
-        .with_minter_config(PROJECT_1_ID, None);
+        .with_create_minter_config(PROJECT_1_ID, None);
 
     let unauthorized_authority = Keypair::new();
     let asset_owner = Keypair::new();
@@ -552,8 +490,6 @@ fn test_mint_asset_with_unauthorized_authority() {
 
     let result = Instructions::mint_asset(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME,
         Some(ASSET_NAME.to_string()),
         Some(ASSET_URI.to_string()),
@@ -592,38 +528,11 @@ fn test_mint_asset_with_unauthorized_authority() {
 fn test_create_duplicate_minter_config_name() {
     let mut fixture = TestFixture::new()
         .with_initialize_protocol()
-        .with_initialize_project(PROJECT_1_ID);
-
-    let result1 = Instructions::create_minter_config(
-        &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
-        MINTER_NAME.to_string(),
-        MINT_PRICE,
-        MAX_SUPPLY,
-        None,
-        None,
-        None,
-        PROJECT_1_ID,
-        fixture.project_owner.pubkey(),
-        fixture.payer.pubkey(),
-        fixture.project_authority_1.pubkey(),
-        None,
-        &[
-            &fixture.payer.insecure_clone(),
-            &fixture.project_authority_1.insecure_clone(),
-        ],
-    );
-
-    assert!(
-        result1.is_ok(),
-        "First minter_config creation should succeed"
-    );
+        .with_initialize_project(PROJECT_1_ID)
+        .with_create_minter_config(PROJECT_1_ID, None);
 
     let result2 = Instructions::create_minter_config(
         &mut fixture.svm,
-        &fixture.program_id_nft_operations,
-        &fixture.program_id_sol_mind,
         MINTER_NAME.to_string(),
         MINT_PRICE,
         MAX_SUPPLY,
@@ -653,5 +562,233 @@ fn test_create_duplicate_minter_config_name() {
             "Error should indicate duplicate creation failed, got: {:?}",
             e
         );
+    }
+}
+
+#[test]
+fn test_create_trade_hub() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID);
+
+    let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
+    let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+
+    let result = Instructions::create_trade_hub(
+        &mut fixture.svm,
+        TRADE_HUB_NAME.to_string(),
+        TRADE_HUB_FEE_BPS,
+        PROJECT_1_ID,
+        fixture.project_owner.pubkey(),
+        fixture.payer.pubkey(),
+        fixture.project_authority_1.pubkey(),
+        &[
+            &fixture.payer.insecure_clone(),
+            &fixture.project_authority_1.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let protocol_config = AccountHelper::get_protocol_config(&fixture.svm);
+            let project_config_pda =
+                AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
+            let trade_hub =
+                AccountHelper::get_trade_hub(&fixture.svm, TRADE_HUB_NAME, &project_config_pda);
+            let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+
+            let trade_hub_pda =
+                AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
+            assert!(
+                fixture.svm.get_account(&trade_hub_pda).is_some(),
+                "Trade hub account should exist"
+            );
+            assert_eq!(trade_hub.name, TRADE_HUB_NAME);
+            assert_eq!(trade_hub.fee_bps, TRADE_HUB_FEE_BPS);
+            assert_eq!(trade_hub.project, project_config_pda);
+            assert_eq!(
+                protocol_final_balance,
+                protocol_initial_balance + protocol_config.fees.create_trade_hub.amount
+            );
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_create_trade_hub_with_unauthorized_authority() {
+    let mut fixture = TestFixture::new()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID);
+
+    let unauthorized_authority = Keypair::new();
+
+    fixture
+        .svm
+        .airdrop(&unauthorized_authority.pubkey(), 1 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund unauthorized authority");
+
+    let result = Instructions::create_trade_hub(
+        &mut fixture.svm,
+        TRADE_HUB_NAME.to_string(),
+        TRADE_HUB_FEE_BPS,
+        PROJECT_1_ID,
+        fixture.project_owner.pubkey(),
+        fixture.payer.pubkey(),
+        unauthorized_authority.pubkey(),
+        &[
+            &fixture.payer.insecure_clone(),
+            &unauthorized_authority.insecure_clone(),
+        ],
+    );
+
+    assert!(
+        result.is_err(),
+        "Transaction should have failed with unauthorized authority, but it succeeded"
+    );
+
+    if let Err(e) = result {
+        let error_string = format!("{:?}", e);
+        assert!(
+            error_string.contains("Unauthorized"),
+            "Error should indicate unauthorized access, got: {:?}",
+            e
+        );
+    }
+}
+
+#[test]
+fn test_list_asset() {
+    let mut fixture = TestFixture::new()
+        .with_metaplex_core_program()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID)
+        .with_create_minter_config(PROJECT_1_ID, None)
+        .with_create_trade_hub(PROJECT_1_ID);
+
+    let asset_owner = Keypair::new();
+    let mint = Keypair::new();
+
+    Instructions::mint_asset(
+        &mut fixture.svm,
+        MINTER_NAME,
+        Some(ASSET_NAME.to_string()),
+        Some(ASSET_URI.to_string()),
+        None,
+        PROJECT_1_ID,
+        fixture.project_owner.pubkey(),
+        fixture.payer.pubkey(),
+        asset_owner.pubkey(),
+        mint.pubkey(),
+        fixture.project_authority_1.pubkey(),
+        None,
+        &[
+            &fixture.payer.insecure_clone(),
+            &asset_owner.insecure_clone(),
+            &fixture.project_authority_1.insecure_clone(),
+            &mint.insecure_clone(),
+        ],
+    )
+    .expect("Failed to mint asset");
+
+    let mut clock: Clock = fixture.svm.get_sysvar();
+    clock.unix_timestamp = 1000;
+    // fixture.svm.warp_to_slot(clock.slot + 100); // Doesn't increase unix_timestamp
+    fixture.svm.set_sysvar(&clock);
+
+    let project_config_pda =
+        AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
+
+    let result = Instructions::list_asset(
+        &mut fixture.svm,
+        LISTING_PRICE,
+        fixture.payer.pubkey(),
+        &asset_owner.pubkey(),
+        &mint.pubkey(),
+        TRADE_HUB_NAME,
+        &project_config_pda,
+        None,
+        &[
+            &fixture.payer.insecure_clone(),
+            &asset_owner.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let trade_hub_pda =
+                AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
+            let listing = AccountHelper::get_listing(&fixture.svm, &mint.pubkey(), &trade_hub_pda);
+
+            assert_eq!(listing.owner, asset_owner.pubkey());
+            assert_eq!(listing.asset, mint.pubkey());
+            assert_eq!(listing.price, LISTING_PRICE);
+            assert!(listing.created_at > 0);
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_list_asset_with_collection() {
+    let collection = Keypair::new();
+    let asset_owner = Keypair::new();
+    let mint = Keypair::new();
+
+    let mut fixture = TestFixture::new()
+        .with_metaplex_core_program()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID)
+        .with_create_minter_config(PROJECT_1_ID, Some(&collection))
+        .with_create_trade_hub(PROJECT_1_ID)
+        .with_minted_asset(PROJECT_1_ID, &asset_owner, &mint, Some(collection.pubkey()));
+
+    let (project_config_pda, _) =
+        AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
+
+    let mut clock: Clock = fixture.svm.get_sysvar();
+    clock.unix_timestamp = 1000;
+    fixture.svm.set_sysvar(&clock);
+
+    let result = Instructions::list_asset(
+        &mut fixture.svm,
+        LISTING_PRICE,
+        fixture.payer.pubkey(),
+        &asset_owner.pubkey(),
+        &mint.pubkey(),
+        TRADE_HUB_NAME,
+        &project_config_pda,
+        Some(collection.pubkey()),
+        &[
+            &fixture.payer.insecure_clone(),
+            &asset_owner.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let trade_hub_pda =
+                AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
+            let listing = AccountHelper::get_listing(&fixture.svm, &mint.pubkey(), &trade_hub_pda);
+
+            assert_eq!(listing.owner, asset_owner.pubkey());
+            assert_eq!(listing.asset, mint.pubkey());
+            assert_eq!(listing.price, LISTING_PRICE);
+
+            assert!(listing.created_at > 0);
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
     }
 }

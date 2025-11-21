@@ -1,12 +1,11 @@
 use anchor_lang::prelude::*;
-
 use mpl_core::{
-     instructions::{AddPluginV1CpiBuilder}, types::{Plugin, TransferDelegate}
+    instructions::AddPluginV1CpiBuilder,
+    types::{Plugin, TransferDelegate},
 };
 
-
-use crate::Listing;
 use crate::state::TradeHub;
+use crate::Listing;
 
 #[derive(Accounts)]
 pub struct ListAsset<'info> {
@@ -54,7 +53,7 @@ impl<'info> ListAsset<'info> {
             asset: self.asset.key(),
             price,
             created_at: Clock::get()?.unix_timestamp,
-            bump 
+            bump,
         });
 
         AddPluginV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
