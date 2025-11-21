@@ -23,7 +23,7 @@ import {
 } from '../instructions';
 
 export const SOL_MIND_PROTOCOL_PROGRAM_ADDRESS =
-  'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24' as Address<'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24'>;
+  'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7' as Address<'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7'>;
 
 export enum SolMindProtocolAccount {
   ProjectConfig,
@@ -146,7 +146,7 @@ export function identifySolMindProtocolInstruction(
 }
 
 export type ParsedSolMindProtocolInstruction<
-  TProgram extends string = 'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24',
+  TProgram extends string = 'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7',
 > =
   | ({
       instructionType: SolMindProtocolInstruction.CreateProject;

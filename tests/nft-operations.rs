@@ -663,37 +663,16 @@ fn test_create_trade_hub_with_unauthorized_authority() {
 
 #[test]
 fn test_list_asset() {
+    let asset_owner = Keypair::new();
+    let mint = Keypair::new();
+
     let mut fixture = TestFixture::new()
         .with_metaplex_core_program()
         .with_initialize_protocol()
         .with_initialize_project(PROJECT_1_ID)
         .with_create_minter_config(PROJECT_1_ID, None)
-        .with_create_trade_hub(PROJECT_1_ID);
-
-    let asset_owner = Keypair::new();
-    let mint = Keypair::new();
-
-    Instructions::mint_asset(
-        &mut fixture.svm,
-        MINTER_NAME,
-        Some(ASSET_NAME.to_string()),
-        Some(ASSET_URI.to_string()),
-        None,
-        PROJECT_1_ID,
-        fixture.project_owner.pubkey(),
-        fixture.payer.pubkey(),
-        asset_owner.pubkey(),
-        mint.pubkey(),
-        fixture.project_authority_1.pubkey(),
-        None,
-        &[
-            &fixture.payer.insecure_clone(),
-            &asset_owner.insecure_clone(),
-            &fixture.project_authority_1.insecure_clone(),
-            &mint.insecure_clone(),
-        ],
-    )
-    .expect("Failed to mint asset");
+        .with_create_trade_hub(PROJECT_1_ID)
+        .with_minted_asset(PROJECT_1_ID, &asset_owner, &mint, None);
 
     let mut clock: Clock = fixture.svm.get_sysvar();
     clock.unix_timestamp = 1000;
@@ -725,11 +704,16 @@ fn test_list_asset() {
             let trade_hub_pda =
                 AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
             let listing = AccountHelper::get_listing(&fixture.svm, &mint.pubkey(), &trade_hub_pda);
+            let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
 
             assert_eq!(listing.owner, asset_owner.pubkey());
             assert_eq!(listing.asset, mint.pubkey());
             assert_eq!(listing.price, LISTING_PRICE);
             assert!(listing.created_at > 0);
+
+            assert!(asset.plugin_list.transfer_delegate.is_some());
+            assert!(asset.plugin_list.freeze_delegate.is_some());
+
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);
@@ -784,11 +768,67 @@ fn test_list_asset_with_collection() {
             assert_eq!(listing.owner, asset_owner.pubkey());
             assert_eq!(listing.asset, mint.pubkey());
             assert_eq!(listing.price, LISTING_PRICE);
+            let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
+            assert!(asset.plugin_list.transfer_delegate.is_some());
+            assert!(asset.plugin_list.freeze_delegate.is_some());
 
             assert!(listing.created_at > 0);
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);
         }
+    }
+}
+
+
+#[test]
+fn test_list_asset_by_non_owner() {
+    let asset_owner = Keypair::new();
+    let non_owner = Keypair::new();
+    let mint = Keypair::new();
+
+    let mut fixture = TestFixture::new()
+        .with_metaplex_core_program()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID)
+        .with_create_minter_config(PROJECT_1_ID, None)
+        .with_create_trade_hub(PROJECT_1_ID)
+        .with_minted_asset(PROJECT_1_ID, &asset_owner, &mint, None);
+
+    fixture
+        .svm
+        .airdrop(&non_owner.pubkey(), 1 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund non-owner");
+
+    let project_config_pda =
+        AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
+
+    let result = Instructions::list_asset(
+        &mut fixture.svm,
+        LISTING_PRICE,
+        fixture.payer.pubkey(),
+        &non_owner.pubkey(),
+        &mint.pubkey(),
+        TRADE_HUB_NAME,
+        &project_config_pda,
+        None,
+        &[
+            &fixture.payer.insecure_clone(),
+            &non_owner.insecure_clone(),
+        ],
+    );
+
+    assert!(
+        result.is_err(),
+        "Transaction should have failed with non-owner"
+    );
+
+    if let Err(e) = result {
+        let error_string = format!("{:?}", e);
+        assert!(
+            error_string.contains("Neither the asset or any plugins have approved this operation"),
+            "Error should indicate unauthorized access, got: {:?}",
+            e
+        );
     }
 }

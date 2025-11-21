@@ -26,11 +26,20 @@ export const NFT_OPERATIONS_ERROR__REQUIRE_NAME_ANDD_URI = 0x1773; // 6003
 export const NFT_OPERATIONS_ERROR__COLLECTION_MISMATCH = 0x1774; // 6004
 /** MaxSupplyReached: Max supply reached */
 export const NFT_OPERATIONS_ERROR__MAX_SUPPLY_REACHED = 0x1775; // 6005
+/** AssetInvalidTransferAuthority: Asset have an invalid transfer delegate authority */
+export const NFT_OPERATIONS_ERROR__ASSET_INVALID_TRANSFER_AUTHORITY = 0x1776; // 6006
+/** AssetAlreadyFrozen: Asset already frozen */
+export const NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN = 0x1777; // 6007
+/** NotAssetOwner: Not the asset owner */
+export const NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER = 0x1778; // 6008
 
 export type NftOperationsError =
+  | typeof NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN
+  | typeof NFT_OPERATIONS_ERROR__ASSET_INVALID_TRANSFER_AUTHORITY
   | typeof NFT_OPERATIONS_ERROR__COLLECTION_MISMATCH
   | typeof NFT_OPERATIONS_ERROR__INVALID_PLUGIN
   | typeof NFT_OPERATIONS_ERROR__MAX_SUPPLY_REACHED
+  | typeof NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER
   | typeof NFT_OPERATIONS_ERROR__REQUIRED_URI
   | typeof NFT_OPERATIONS_ERROR__REQUIRE_NAME_ANDD_URI
   | typeof NFT_OPERATIONS_ERROR__UNAUTHORIZED;
@@ -38,9 +47,12 @@ export type NftOperationsError =
 let nftOperationsErrorMessages: Record<NftOperationsError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   nftOperationsErrorMessages = {
+    [NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN]: `Asset already frozen`,
+    [NFT_OPERATIONS_ERROR__ASSET_INVALID_TRANSFER_AUTHORITY]: `Asset have an invalid transfer delegate authority`,
     [NFT_OPERATIONS_ERROR__COLLECTION_MISMATCH]: `Mismatch with the collection on minter config`,
     [NFT_OPERATIONS_ERROR__INVALID_PLUGIN]: `PluginAuthorityPair could not be deserialized`,
     [NFT_OPERATIONS_ERROR__MAX_SUPPLY_REACHED]: `Max supply reached`,
+    [NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER]: `Not the asset owner`,
     [NFT_OPERATIONS_ERROR__REQUIRED_URI]: `Collection requires an uri`,
     [NFT_OPERATIONS_ERROR__REQUIRE_NAME_ANDD_URI]: `If minter config don't have and asset config provide a name and uri`,
     [NFT_OPERATIONS_ERROR__UNAUTHORIZED]: `Unauthorized: Only authorities can perform this action`,

@@ -14,4 +14,10 @@ pub enum ErrorCode {
     CollectionMismatch,
     #[msg("Max supply reached")]
     MaxSupplyReached,
+    #[msg("Asset have an invalid transfer delegate authority")]
+    AssetInvalidTransferAuthority,
+    #[msg("Asset already frozen")]
+    AssetAlreadyFrozen,
+    #[msg("Not the asset owner")]
+    NotAssetOwner,
 }

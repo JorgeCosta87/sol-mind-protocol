@@ -49,6 +49,7 @@ impl TestFixture {
             NFT_OPERATIONS_SO_PATH,
         );
 
+
         svm.airdrop(&payer.pubkey(), 10 * LAMPORTS_PER_SOL)
             .expect("Failed to fund payer");
 

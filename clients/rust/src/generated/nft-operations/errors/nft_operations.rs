@@ -28,6 +28,15 @@ pub enum NftOperationsError {
     /// 6005 - Max supply reached
     #[error("Max supply reached")]
     MaxSupplyReached = 0x1775,
+    /// 6006 - Asset have an invalid transfer delegate authority
+    #[error("Asset have an invalid transfer delegate authority")]
+    AssetInvalidTransferAuthority = 0x1776,
+    /// 6007 - Asset already frozen
+    #[error("Asset already frozen")]
+    AssetAlreadyFrozen = 0x1777,
+    /// 6008 - Not the asset owner
+    #[error("Not the asset owner")]
+    NotAssetOwner = 0x1778,
 }
 
 impl From<NftOperationsError> for solana_program_error::ProgramError {

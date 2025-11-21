@@ -302,7 +302,7 @@ export async function getCreateMinterConfigInstructionAsync<
   if (!accounts.protocolConfig.value) {
     accounts.protocolConfig.value = await getProgramDerivedAddress({
       programAddress:
-        'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24' as Address<'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24'>,
+        'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7' as Address<'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7'>,
       seeds: [
         getBytesEncoder().encode(
           new Uint8Array([

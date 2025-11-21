@@ -21,7 +21,7 @@ import {
 } from '../instructions';
 
 export const NFT_OPERATIONS_PROGRAM_ADDRESS =
-  'DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ' as Address<'DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ'>;
+  '3svA9B2F5uUkVMzaf8KCXiRJYf1n9aQFCzp2SQszdiVU' as Address<'3svA9B2F5uUkVMzaf8KCXiRJYf1n9aQFCzp2SQszdiVU'>;
 
 export enum NftOperationsAccount {
   Listing,
@@ -156,7 +156,7 @@ export function identifyNftOperationsInstruction(
 }
 
 export type ParsedNftOperationsInstruction<
-  TProgram extends string = 'DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ',
+  TProgram extends string = '3svA9B2F5uUkVMzaf8KCXiRJYf1n9aQFCzp2SQszdiVU',
 > =
   | ({
       instructionType: NftOperationsInstruction.CreateMinterConfig;
