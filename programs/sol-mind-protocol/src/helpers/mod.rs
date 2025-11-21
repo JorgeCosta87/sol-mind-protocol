@@ -42,7 +42,7 @@ pub fn pay_protocol_fee<'info>(
     base_amount: Option<u64>,
 ) -> Result<()> {
     let fee_amount = protocol_config.calculate_fee_amount(operation, base_amount);
-
+    
     if fee_amount > 0 {
         cpi_transfer(
             fee_payer.to_account_info(),

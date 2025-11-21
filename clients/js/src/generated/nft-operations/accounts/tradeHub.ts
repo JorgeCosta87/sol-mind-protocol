@@ -17,6 +17,8 @@ import {
   fetchEncodedAccounts,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressDecoder,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -53,12 +55,14 @@ export function getTradeHubDiscriminatorBytes() {
 
 export type TradeHub = {
   discriminator: ReadonlyUint8Array;
+  project: Address;
   name: string;
   feeBps: bigint;
   bump: number;
 };
 
 export type TradeHubArgs = {
+  project: Address;
   name: string;
   feeBps: number | bigint;
   bump: number;
@@ -68,6 +72,7 @@ export function getTradeHubEncoder(): Encoder<TradeHubArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['project', getAddressEncoder()],
       ['name', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ['feeBps', getU64Encoder()],
       ['bump', getU8Encoder()],
@@ -79,6 +84,7 @@ export function getTradeHubEncoder(): Encoder<TradeHubArgs> {
 export function getTradeHubDecoder(): Decoder<TradeHub> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['project', getAddressDecoder()],
     ['name', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ['feeBps', getU64Decoder()],
     ['bump', getU8Decoder()],

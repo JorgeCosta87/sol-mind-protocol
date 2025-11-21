@@ -60,6 +60,7 @@ impl<'info> CreateTradeHub<'info> {
         )?;
 
         self.trade_hub.set_inner(TradeHub {
+            project: self.project_config.key(),
             name,
             fee_bps: fee_bps,
             bump,

@@ -3,7 +3,8 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(InitSpace)]
 pub struct TradeHub {
-    #[max_len(64)]
+    pub project: Pubkey,
+    #[max_len(32)]
     pub name: String,
     pub fee_bps: u64,
     pub bump: u8,

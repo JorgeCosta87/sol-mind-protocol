@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24");
+declare_id!("DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ");
 
 pub mod context;
 pub mod errors;
@@ -53,5 +53,13 @@ pub mod nft_operations {
     ) -> Result<()> {
         ctx.accounts
             .create_trade_hub(name, fee_bps, ctx.bumps.trade_hub)
+    }
+
+    pub fn list_asset(
+        ctx: Context<ListAsset>,
+        price: u64,
+    ) -> Result<()> {
+        ctx.accounts
+            .create_listing(price, ctx.bumps.listing)
     }
 }

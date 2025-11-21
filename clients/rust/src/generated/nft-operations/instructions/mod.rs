@@ -7,8 +7,10 @@
 
 pub(crate) mod r#create_minter_config;
 pub(crate) mod r#create_trade_hub;
+pub(crate) mod r#list_asset;
 pub(crate) mod r#mint_asset;
 
 pub use self::r#create_minter_config::*;
 pub use self::r#create_trade_hub::*;
+pub use self::r#list_asset::*;
 pub use self::r#mint_asset::*;

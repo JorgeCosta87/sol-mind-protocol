@@ -16,13 +16,15 @@ import {
 import {
   type ParsedCreateMinterConfigInstruction,
   type ParsedCreateTradeHubInstruction,
+  type ParsedListAssetInstruction,
   type ParsedMintAssetInstruction,
 } from '../instructions';
 
 export const NFT_OPERATIONS_PROGRAM_ADDRESS =
-  'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24' as Address<'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24'>;
+  'DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ' as Address<'DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ'>;
 
 export enum NftOperationsAccount {
+  Listing,
   MinterConfig,
   ProjectConfig,
   ProtocolConfig,
@@ -33,6 +35,17 @@ export function identifyNftOperationsAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array
 ): NftOperationsAccount {
   const data = 'data' in account ? account.data : account;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([218, 32, 50, 73, 43, 134, 26, 58])
+      ),
+      0
+    )
+  ) {
+    return NftOperationsAccount.Listing;
+  }
   if (
     containsBytes(
       data,
@@ -85,6 +98,7 @@ export function identifyNftOperationsAccount(
 export enum NftOperationsInstruction {
   CreateMinterConfig,
   CreateTradeHub,
+  ListAsset,
   MintAsset,
 }
 
@@ -118,6 +132,17 @@ export function identifyNftOperationsInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([11, 25, 254, 205, 61, 252, 23, 15])
+      ),
+      0
+    )
+  ) {
+    return NftOperationsInstruction.ListAsset;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([84, 175, 211, 156, 56, 250, 104, 118])
       ),
       0
@@ -131,7 +156,7 @@ export function identifyNftOperationsInstruction(
 }
 
 export type ParsedNftOperationsInstruction<
-  TProgram extends string = 'EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24',
+  TProgram extends string = 'DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ',
 > =
   | ({
       instructionType: NftOperationsInstruction.CreateMinterConfig;
@@ -139,6 +164,9 @@ export type ParsedNftOperationsInstruction<
   | ({
       instructionType: NftOperationsInstruction.CreateTradeHub;
     } & ParsedCreateTradeHubInstruction<TProgram>)
+  | ({
+      instructionType: NftOperationsInstruction.ListAsset;
+    } & ParsedListAssetInstruction<TProgram>)
   | ({
       instructionType: NftOperationsInstruction.MintAsset;
     } & ParsedMintAssetInstruction<TProgram>);
