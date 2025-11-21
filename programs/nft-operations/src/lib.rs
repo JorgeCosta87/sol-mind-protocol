@@ -58,4 +58,8 @@ pub mod nft_operations {
     pub fn list_asset(ctx: Context<ListAsset>, price: u64) -> Result<()> {
         ctx.accounts.create_listing(price, ctx.bumps.listing)
     }
+
+    pub fn purchase_asset(ctx: Context<Purchase>,) -> Result<()> {
+        ctx.accounts.purchase_asset()
+    }
 }

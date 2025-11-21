@@ -14,7 +14,7 @@ pub struct ListAsset<'info> {
     #[account(mut)]
     /// CHECK: Asset account manual verified
     pub asset: UncheckedAccount<'info>,
-    /// CHECK: Collection account validated by mpl_core program
+    /// CHECK: Collection account manual verified
     #[account(mut)]
     pub collection: Option<UncheckedAccount<'info>>,
     #[account(

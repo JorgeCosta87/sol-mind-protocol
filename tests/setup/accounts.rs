@@ -58,6 +58,21 @@ impl AccountHelper {
         .unwrap()
     }
 
+    pub fn get_treasury_pda(svm: &LiteSVM, project_config_pda: &Pubkey) -> Pubkey {
+        let project_config_account = svm
+            .get_account(project_config_pda)
+            .expect("Project config account not found");
+        
+        let project_config = ProjectConfig::from_bytes(&project_config_account.data)
+            .expect("Failed to deserialize project config");
+        
+        Pubkey::create_program_address(
+            &[b"treasury", project_config_pda.as_ref(), &[project_config.treasury_bump]],
+            &SOL_MIND_PROTOCOL_ID,
+        )
+        .expect("Failed to create treasury PDA")
+    }
+
     pub fn find_minter_config_pda(project_config_pda: &Pubkey, name: &str) -> (Pubkey, u8) {
         Pubkey::try_find_program_address(
             &[

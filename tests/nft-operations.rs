@@ -832,3 +832,192 @@ fn test_list_asset_by_non_owner() {
         );
     }
 }
+
+#[test]
+fn test_purchase_asset() {
+    let asset_owner = Keypair::new();
+    let buyer = Keypair::new();
+    let mint = Keypair::new();
+
+    let mut fixture = TestFixture::new()
+        .with_metaplex_core_program()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID)
+        .with_create_minter_config(PROJECT_1_ID, None)
+        .with_create_trade_hub(PROJECT_1_ID)
+        .with_minted_asset(PROJECT_1_ID, &asset_owner, &mint, None);
+
+    fixture
+        .svm
+        .airdrop(&buyer.pubkey(), 10 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund buyer");
+
+    let project_config_pda =
+        AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
+
+    Instructions::list_asset(
+        &mut fixture.svm,
+        LISTING_PRICE,
+        fixture.payer.pubkey(),
+        &asset_owner.pubkey(),
+        &mint.pubkey(),
+        TRADE_HUB_NAME,
+        &project_config_pda,
+        None,
+        &[&fixture.payer.insecure_clone(), &asset_owner.insecure_clone()],
+    )
+    .expect("Failed to list asset");
+
+    let protocol_config = AccountHelper::get_protocol_config(&fixture.svm);
+    let protocol_initial_balance = utils::get_lamports(&fixture.svm, &AccountHelper::find_protocol_config_pda().0);
+    let treasury_pda = AccountHelper::find_treasury_pda(&project_config_pda).0;
+    let treasury_initial_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
+    let buyer_initial_balance = utils::get_lamports(&fixture.svm, &buyer.pubkey());
+    let owner_initial_balance = utils::get_lamports(&fixture.svm, &asset_owner.pubkey());
+
+    let result = Instructions::purchase_asset(
+        &mut fixture.svm,
+        buyer.pubkey(),
+        &asset_owner.pubkey(),
+        &mint.pubkey(),
+        TRADE_HUB_NAME,
+        &project_config_pda,
+        None,
+        &[&buyer.insecure_clone()],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
+            let protocol_final_balance = utils::get_lamports(&fixture.svm, &AccountHelper::find_protocol_config_pda().0);
+            let treasury_final_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
+            let buyer_final_balance = utils::get_lamports(&fixture.svm, &buyer.pubkey());
+            let owner_final_balance = utils::get_lamports(&fixture.svm, &asset_owner.pubkey());
+
+            assert_eq!(
+                asset.base.owner.to_string(),
+                buyer.pubkey().to_string(),
+                "Asset should be transferred to buyer"
+            );
+
+            let protocol_fee = match protocol_config.fees.trade_nft.fee_type {
+                sol_mind_protocol_client::types::FeeType::Fixed => protocol_config.fees.trade_nft.amount,
+                sol_mind_protocol_client::types::FeeType::Percentage => {
+                    LISTING_PRICE
+                        .checked_mul(protocol_config.fees.trade_nft.amount)
+                        .unwrap()
+                        .checked_div(10_000)
+                        .unwrap()
+                }
+            };
+            let trade_hub = AccountHelper::get_trade_hub(&fixture.svm, TRADE_HUB_NAME, &project_config_pda);
+            let trade_hub_fee = LISTING_PRICE
+                .checked_mul(trade_hub.fee_bps)
+                .unwrap()
+                .checked_div(10_000)
+                .unwrap();
+            let seller_amount = LISTING_PRICE
+                .checked_sub(protocol_fee)
+                .unwrap()
+                .checked_sub(trade_hub_fee)
+                .unwrap();
+
+            assert_eq!(
+                protocol_final_balance,
+                protocol_initial_balance + protocol_fee,
+                "Protocol should receive fee"
+            );
+            assert_eq!(
+                treasury_final_balance,
+                treasury_initial_balance + trade_hub_fee,
+                "Treasury should receive trade hub fee"
+            );
+            assert_eq!(
+                owner_final_balance,
+                owner_initial_balance + seller_amount,
+                "Owner should receive seller amount"
+            );
+            assert_eq!(
+                buyer_final_balance,
+                buyer_initial_balance - LISTING_PRICE - protocol_fee,
+                "Buyer should pay listing price and protocol fee"
+            );
+
+            assert!(asset.plugin_list.freeze_delegate.is_some());
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_purchase_asset_with_collection() {
+    let collection = Keypair::new();
+    let asset_owner = Keypair::new();
+    let buyer = Keypair::new();
+    let mint = Keypair::new();
+
+    let mut fixture = TestFixture::new()
+        .with_metaplex_core_program()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID)
+        .with_create_minter_config(PROJECT_1_ID, Some(&collection))
+        .with_create_trade_hub(PROJECT_1_ID)
+        .with_minted_asset(PROJECT_1_ID, &asset_owner, &mint, Some(collection.pubkey()));
+
+    fixture
+        .svm
+        .airdrop(&buyer.pubkey(), 10 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund buyer");
+
+    let project_config_pda =
+        AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
+
+    let mut clock: Clock = fixture.svm.get_sysvar();
+    clock.unix_timestamp = 1000;
+    fixture.svm.set_sysvar(&clock);
+
+    Instructions::list_asset(
+        &mut fixture.svm,
+        LISTING_PRICE,
+        fixture.payer.pubkey(),
+        &asset_owner.pubkey(),
+        &mint.pubkey(),
+        TRADE_HUB_NAME,
+        &project_config_pda,
+        Some(collection.pubkey()),
+        &[&fixture.payer.insecure_clone(), &asset_owner.insecure_clone()],
+    )
+    .expect("Failed to list asset");
+
+    let result = Instructions::purchase_asset(
+        &mut fixture.svm,
+        buyer.pubkey(),
+        &asset_owner.pubkey(),
+        &mint.pubkey(),
+        TRADE_HUB_NAME,
+        &project_config_pda,
+        Some(collection.pubkey()),
+        &[&buyer.insecure_clone()],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+
+            let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
+
+            assert_eq!(
+                asset.base.owner.to_string(),
+                buyer.pubkey().to_string(),
+                "Asset should be transferred to buyer"
+            );
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}

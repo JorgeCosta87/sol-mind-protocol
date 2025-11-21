@@ -18,6 +18,7 @@ import {
   type ParsedCreateTradeHubInstruction,
   type ParsedListAssetInstruction,
   type ParsedMintAssetInstruction,
+  type ParsedPurchaseAssetInstruction,
 } from '../instructions';
 
 export const NFT_OPERATIONS_PROGRAM_ADDRESS =
@@ -100,6 +101,7 @@ export enum NftOperationsInstruction {
   CreateTradeHub,
   ListAsset,
   MintAsset,
+  PurchaseAsset,
 }
 
 export function identifyNftOperationsInstruction(
@@ -150,6 +152,17 @@ export function identifyNftOperationsInstruction(
   ) {
     return NftOperationsInstruction.MintAsset;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([141, 216, 187, 174, 119, 200, 123, 167])
+      ),
+      0
+    )
+  ) {
+    return NftOperationsInstruction.PurchaseAsset;
+  }
   throw new Error(
     'The provided instruction could not be identified as a nftOperations instruction.'
   );
@@ -169,4 +182,7 @@ export type ParsedNftOperationsInstruction<
     } & ParsedListAssetInstruction<TProgram>)
   | ({
       instructionType: NftOperationsInstruction.MintAsset;
-    } & ParsedMintAssetInstruction<TProgram>);
+    } & ParsedMintAssetInstruction<TProgram>)
+  | ({
+      instructionType: NftOperationsInstruction.PurchaseAsset;
+    } & ParsedPurchaseAssetInstruction<TProgram>);
