@@ -26,8 +26,14 @@ impl AccountHelper {
     }
 
     pub fn find_project_pda(owner: &Pubkey, project_id: u64) -> (Pubkey, u8) {
+        let protocol_config_pda = Self::find_protocol_config_pda().0;
         Pubkey::try_find_program_address(
-            &[b"project", owner.as_ref(), &project_id.to_le_bytes()],
+            &[
+                b"project",
+                owner.as_ref(),
+                &project_id.to_le_bytes(),
+                protocol_config_pda.as_ref(),
+            ],
             &SOL_MIND_PROTOCOL_ID,
         )
         .unwrap()

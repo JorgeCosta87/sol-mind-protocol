@@ -37,6 +37,7 @@ pub struct CreateMinterConfig<'info> {
             b"project",
             project_config.owner.as_ref(),
             project_config.project_id.to_le_bytes().as_ref(),
+            project_config.protocol_config.as_ref(),
         ],
         bump = project_config.bump,
         seeds::program = sol_mind_protocol::ID,
