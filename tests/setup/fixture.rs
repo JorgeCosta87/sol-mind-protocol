@@ -279,6 +279,31 @@ impl TestFixture {
         self
     }
 
+    pub fn with_delist_asset(
+        mut self,
+        project_id: u64,
+        mint: Pubkey,
+        asset_owner: &Keypair,
+        collection: Option<Pubkey>,
+    ) -> Self {
+        let project_config_pda =
+            AccountHelper::find_project_pda(&self.project_owner.pubkey(), project_id).0;
+
+        Instructions::delist_asset(
+            &mut self.svm,
+            &self.payer.pubkey(),
+            &asset_owner.pubkey(),
+            &mint,
+            TRADE_HUB_NAME,
+            &project_config_pda,
+            collection,
+            &[&self.payer.insecure_clone(), &asset_owner.insecure_clone()],
+        )
+        .expect("Failed to delist asset");
+
+        self
+    }
+
     pub fn purchase_asset(
         mut self,
         project_id: u64,
@@ -305,3 +330,5 @@ impl TestFixture {
         self
     }
 }
+
+

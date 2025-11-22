@@ -5,10 +5,7 @@ use litesvm::{
     LiteSVM,
 };
 use solana_sdk::{
-    instruction::Instruction,
-    pubkey::Pubkey,
-    signature::{read_keypair_file, Keypair, Signer},
-    transaction::Transaction,
+    clock::Clock, instruction::Instruction, pubkey::Pubkey, signature::{Keypair, Signer, read_keypair_file}, transaction::Transaction
 };
 
 pub use mpl::MplUtils;
@@ -53,13 +50,20 @@ pub fn send_transaction(
     payer: &Pubkey,
     signing_keypairs: &[&Keypair],
 ) -> TransactionResult {
+    let blockhash = svm.latest_blockhash();
     let tx = Transaction::new_signed_with_payer(
         instructions,
         Some(payer),
         signing_keypairs,
-        svm.latest_blockhash(),
+        blockhash,
     );
-    svm.send_transaction(tx)
+    let result = svm.send_transaction(tx);
+    
+    svm.expire_blockhash();
+    let clock: Clock = svm.get_sysvar();
+    svm.warp_to_slot(clock.slot + 100);
+
+    result
 }
 
 pub fn get_lamports(svm: &LiteSVM, address: &Pubkey) -> u64 {

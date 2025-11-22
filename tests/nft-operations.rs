@@ -558,7 +558,7 @@ fn test_create_duplicate_minter_config_name() {
     if let Err(e) = result2 {
         let error_string = format!("{:?}", e);
         assert!(
-            error_string.contains("AlreadyProcessed"),
+            error_string.contains("already in use"),
             "Error should indicate duplicate creation failed, got: {:?}",
             e
         );
@@ -866,13 +866,17 @@ fn test_purchase_asset() {
 
     let project_config_pda =
         AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
-
     let protocol_config = AccountHelper::get_protocol_config(&fixture.svm);
     let protocol_initial_balance =
         utils::get_lamports(&fixture.svm, &AccountHelper::find_protocol_config_pda().0);
     let treasury_pda = AccountHelper::find_treasury_pda(&project_config_pda).0;
     let treasury_initial_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
     let owner_initial_balance = utils::get_lamports(&fixture.svm, &asset_owner.pubkey());
+    let trade_hub_pda =
+        AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
+    let listing_pda =
+        AccountHelper::find_listing_pda(&mint.pubkey(), &trade_hub_pda).0;
+    let listing_balance = utils::get_lamports(&fixture.svm, &listing_pda);
 
     let result = Instructions::purchase_asset(
         &mut fixture.svm,
@@ -889,6 +893,7 @@ fn test_purchase_asset() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
+            let listing = AccountHelper::get_listing(&fixture.svm, &mint.pubkey(), &trade_hub_pda);
             let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
             let protocol_final_balance =
                 utils::get_lamports(&fixture.svm, &AccountHelper::find_protocol_config_pda().0);
@@ -936,8 +941,8 @@ fn test_purchase_asset() {
             );
             assert_eq!(
                 owner_final_balance,
-                owner_initial_balance + seller_amount,
-                "Owner should receive seller amount"
+                owner_initial_balance + seller_amount + listing_balance,
+                "Owner should receive seller amount and the listing rent"
             );
             let freeze_plugin = asset
                 .plugin_list
@@ -950,6 +955,7 @@ fn test_purchase_asset() {
                 .transfer_delegate
                 .expect("Transfer delegate plugin should exist");
             assert_eq!(transfer_plugin.base.authority.address, None);
+            assert!(listing.is_none())
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);
@@ -1063,4 +1069,35 @@ fn test_delist_asset() {
             panic!("Transaction failed: {:?}", e);
         }
     }
+}
+
+#[test]
+fn test_deslist_asset_and_than_list_again() {
+    let asset_owner = Keypair::new();
+    let mint = Keypair::new();
+
+    let fixture = TestFixture::new()
+        .with_metaplex_core_program()
+        .with_initialize_protocol()
+        .with_initialize_project(PROJECT_1_ID)
+        .with_create_minter_config(PROJECT_1_ID, None)
+        .with_create_trade_hub(PROJECT_1_ID)
+        .with_minted_asset(PROJECT_1_ID, &asset_owner, &mint, None)
+        .with_list_asset(PROJECT_1_ID, mint.pubkey(), &asset_owner, None)
+        .with_delist_asset(PROJECT_1_ID, mint.pubkey(), &asset_owner, None)
+        .with_list_asset(PROJECT_1_ID, mint.pubkey(), &asset_owner, None);
+
+    let project_config_pda =
+        AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
+
+    let trade_hub_pda =
+        AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
+    let listing = AccountHelper::get_listing(&fixture.svm, &mint.pubkey(), &trade_hub_pda);
+    let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
+
+    assert!(asset.plugin_list.freeze_delegate.is_some());
+    assert!(asset.plugin_list.transfer_delegate.is_some());
+    assert!(listing.is_some());
+    assert_eq!(listing.unwrap().price, LISTING_PRICE);
+
 }

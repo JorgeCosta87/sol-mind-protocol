@@ -85,7 +85,7 @@ export type PurchaseAssetInstruction<
         ? WritableAccount<TAccountCollection>
         : TAccountCollection,
       TAccountListing extends string
-        ? ReadonlyAccount<TAccountListing>
+        ? WritableAccount<TAccountListing>
         : TAccountListing,
       TAccountTradeHub extends string
         ? ReadonlyAccount<TAccountTradeHub>
@@ -218,7 +218,7 @@ export async function getPurchaseAssetInstructionAsync<
     owner: { value: input.owner ?? null, isWritable: true },
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: true },
-    listing: { value: input.listing ?? null, isWritable: false },
+    listing: { value: input.listing ?? null, isWritable: true },
     tradeHub: { value: input.tradeHub ?? null, isWritable: false },
     treasury: { value: input.treasury ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
@@ -390,7 +390,7 @@ export function getPurchaseAssetInstruction<
     owner: { value: input.owner ?? null, isWritable: true },
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: true },
-    listing: { value: input.listing ?? null, isWritable: false },
+    listing: { value: input.listing ?? null, isWritable: true },
     tradeHub: { value: input.tradeHub ?? null, isWritable: false },
     treasury: { value: input.treasury ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
