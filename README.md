@@ -335,8 +335,6 @@ yarn install
 # Build the programs
 anchor build
 
-# Run tests
-anchor test
 ```
 
 ### Build and Generate Clients
@@ -355,7 +353,9 @@ Tests are written in Rust using **LiteSVM** for fast, in-process Solana program 
 
 Run all tests:
 ```bash
+anchor run build # It will also generate the rust client for the tests
 anchor test
+anchor test-verbose 
 ```
 
 Run tests for specific program:
