@@ -15,6 +15,7 @@ A Solana protocol built with Anchor that enables project management, NFT minting
 - **Mint Asset**: Mint NFTs using MPL Core with configurable metadata and plugins
 - **Create Trade Hub**: Set up a marketplace hub for NFT trading with custom fee rates
 - **List Asset**: List NFTs for sale on a trade hub
+- **Delist Asset**: Remove NFTs from sale and restore full ownership control
 - **Purchase Asset**: Buy listed NFTs with automatic fee distribution
 
 
@@ -219,6 +220,21 @@ pub fn list_asset(ctx: Context<ListAsset>, price: u64) -> Result<()>
 - Creates listing PDA account
 - Adds TransferDelegate plugin with trade hub as authority
 - Adds FreezeDelegate plugin to prevent transfers while listed
+- Validates asset ownership
+
+#### Delist Asset
+
+Removes an NFT from sale and restores full ownership control.
+
+```rust
+pub fn delist_asset(ctx: Context<DelistAsset>) -> Result<()>
+```
+
+**What it does:**
+- Unfreezes the asset (sets frozen to false)
+- Removes FreezeDelegate plugin from the asset
+- Removes TransferDelegate plugin from the asset
+- Closes listing account and returns rent to owner
 - Validates asset ownership
 
 #### Purchase Asset
