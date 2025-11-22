@@ -37,6 +37,9 @@ pub enum NftOperationsError {
     /// 6008 - Not the asset owner
     #[error("Not the asset owner")]
     NotAssetOwner = 0x1778,
+    /// 6009 - Fee calculation overflow
+    #[error("Fee calculation overflow")]
+    FeeCalculationOverflow = 0x1779,
 }
 
 impl From<NftOperationsError> for solana_program_error::ProgramError {

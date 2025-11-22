@@ -16,6 +16,7 @@ import {
 import {
   type ParsedCreateMinterConfigInstruction,
   type ParsedCreateTradeHubInstruction,
+  type ParsedDelistAssetInstruction,
   type ParsedListAssetInstruction,
   type ParsedMintAssetInstruction,
   type ParsedPurchaseAssetInstruction,
@@ -99,6 +100,7 @@ export function identifyNftOperationsAccount(
 export enum NftOperationsInstruction {
   CreateMinterConfig,
   CreateTradeHub,
+  DelistAsset,
   ListAsset,
   MintAsset,
   PurchaseAsset,
@@ -129,6 +131,17 @@ export function identifyNftOperationsInstruction(
     )
   ) {
     return NftOperationsInstruction.CreateTradeHub;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([14, 118, 119, 59, 231, 94, 152, 172])
+      ),
+      0
+    )
+  ) {
+    return NftOperationsInstruction.DelistAsset;
   }
   if (
     containsBytes(
@@ -177,6 +190,9 @@ export type ParsedNftOperationsInstruction<
   | ({
       instructionType: NftOperationsInstruction.CreateTradeHub;
     } & ParsedCreateTradeHubInstruction<TProgram>)
+  | ({
+      instructionType: NftOperationsInstruction.DelistAsset;
+    } & ParsedDelistAssetInstruction<TProgram>)
   | ({
       instructionType: NftOperationsInstruction.ListAsset;
     } & ParsedListAssetInstruction<TProgram>)

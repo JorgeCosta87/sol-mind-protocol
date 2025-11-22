@@ -22,6 +22,9 @@ pub enum SolMindProtocolError {
     /// 6003 - Minimun balance required for rend exempt
     #[error("Minimun balance required for rend exempt")]
     MinimumBalanceRequired = 0x1773,
+    /// 6004 - Fee calculation overflow
+    #[error("Fee calculation overflow")]
+    FeeCalculationOverflow = 0x1774,
 }
 
 impl From<SolMindProtocolError> for solana_program_error::ProgramError {

@@ -29,7 +29,7 @@ pub const FEE_CREATE_MINTER_CONFIG_AMOUNT: u64 = 500_000;
 pub const FEE_MINT_ASSET_AMOUNT: u64 = 50_000;
 pub const FEE_GENERIC_OPERATION_AMOUNT: u64 = 100_000;
 pub const FEE_CREATE_TRADE_HUB_AMOUNT: u64 = 200_000;
-pub const FEE_TRADE_NFT_AMOUNT: u64 = 25_000;
+pub const FEE_TRADE_NFT_AMOUNT: u64 = 150;
 
 pub fn default_fees_structure() -> sol_mind_protocol_client::types::FeesStructure {
     use sol_mind_protocol_client::types::{Fee, FeeType};
@@ -56,7 +56,7 @@ pub fn default_fees_structure() -> sol_mind_protocol_client::types::FeesStructur
         },
         trade_nft: Fee {
             amount: FEE_TRADE_NFT_AMOUNT,
-            fee_type: FeeType::Fixed,
+            fee_type: FeeType::Percentage,
         },
     }
 }

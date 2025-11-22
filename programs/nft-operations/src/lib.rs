@@ -59,7 +59,11 @@ pub mod nft_operations {
         ctx.accounts.create_listing(price, ctx.bumps.listing)
     }
 
-    pub fn purchase_asset(ctx: Context<Purchase>,) -> Result<()> {
+    pub fn delist_asset(ctx: Context<DelistAsset>) -> Result<()> {
+        ctx.accounts.delist_asset()
+    }
+
+    pub fn purchase_asset(ctx: Context<Purchase>) -> Result<()> {
         ctx.accounts.purchase_asset()
     }
 }

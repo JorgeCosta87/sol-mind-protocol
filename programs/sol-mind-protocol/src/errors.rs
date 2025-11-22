@@ -10,4 +10,6 @@ pub enum ProtocolError {
     InsufficientFunds,
     #[msg("Minimun balance required for rend exempt")]
     MinimumBalanceRequired,
+    #[msg("Fee calculation overflow")]
+    FeeCalculationOverflow,
 }

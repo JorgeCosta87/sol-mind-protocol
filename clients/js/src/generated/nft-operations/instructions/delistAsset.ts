@@ -39,27 +39,24 @@ import {
   type ResolvedAccount,
 } from '../shared';
 
-export const PURCHASE_ASSET_DISCRIMINATOR = new Uint8Array([
-  141, 216, 187, 174, 119, 200, 123, 167,
+export const DELIST_ASSET_DISCRIMINATOR = new Uint8Array([
+  14, 118, 119, 59, 231, 94, 152, 172,
 ]);
 
-export function getPurchaseAssetDiscriminatorBytes() {
+export function getDelistAssetDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    PURCHASE_ASSET_DISCRIMINATOR
+    DELIST_ASSET_DISCRIMINATOR
   );
 }
 
-export type PurchaseAssetInstruction<
+export type DelistAssetInstruction<
   TProgram extends string = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
-  TAccountBuyer extends string | AccountMeta<string> = string,
+  TAccountPayer extends string | AccountMeta<string> = string,
   TAccountOwner extends string | AccountMeta<string> = string,
   TAccountAsset extends string | AccountMeta<string> = string,
   TAccountCollection extends string | AccountMeta<string> = string,
   TAccountListing extends string | AccountMeta<string> = string,
   TAccountTradeHub extends string | AccountMeta<string> = string,
-  TAccountTreasury extends string | AccountMeta<string> = string,
-  TAccountProjectConfig extends string | AccountMeta<string> = string,
-  TAccountProtocolConfig extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -71,12 +68,13 @@ export type PurchaseAssetInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountBuyer extends string
-        ? WritableSignerAccount<TAccountBuyer> &
-            AccountSignerMeta<TAccountBuyer>
-        : TAccountBuyer,
+      TAccountPayer extends string
+        ? WritableSignerAccount<TAccountPayer> &
+            AccountSignerMeta<TAccountPayer>
+        : TAccountPayer,
       TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
+        ? WritableSignerAccount<TAccountOwner> &
+            AccountSignerMeta<TAccountOwner>
         : TAccountOwner,
       TAccountAsset extends string
         ? WritableAccount<TAccountAsset>
@@ -85,20 +83,11 @@ export type PurchaseAssetInstruction<
         ? WritableAccount<TAccountCollection>
         : TAccountCollection,
       TAccountListing extends string
-        ? ReadonlyAccount<TAccountListing>
+        ? WritableAccount<TAccountListing>
         : TAccountListing,
       TAccountTradeHub extends string
         ? ReadonlyAccount<TAccountTradeHub>
         : TAccountTradeHub,
-      TAccountTreasury extends string
-        ? WritableAccount<TAccountTreasury>
-        : TAccountTreasury,
-      TAccountProjectConfig extends string
-        ? ReadonlyAccount<TAccountProjectConfig>
-        : TAccountProjectConfig,
-      TAccountProtocolConfig extends string
-        ? WritableAccount<TAccountProtocolConfig>
-        : TAccountProtocolConfig,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -109,101 +98,84 @@ export type PurchaseAssetInstruction<
     ]
   >;
 
-export type PurchaseAssetInstructionData = {
-  discriminator: ReadonlyUint8Array;
-};
+export type DelistAssetInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type PurchaseAssetInstructionDataArgs = {};
+export type DelistAssetInstructionDataArgs = {};
 
-export function getPurchaseAssetInstructionDataEncoder(): FixedSizeEncoder<PurchaseAssetInstructionDataArgs> {
+export function getDelistAssetInstructionDataEncoder(): FixedSizeEncoder<DelistAssetInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: PURCHASE_ASSET_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: DELIST_ASSET_DISCRIMINATOR })
   );
 }
 
-export function getPurchaseAssetInstructionDataDecoder(): FixedSizeDecoder<PurchaseAssetInstructionData> {
+export function getDelistAssetInstructionDataDecoder(): FixedSizeDecoder<DelistAssetInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getPurchaseAssetInstructionDataCodec(): FixedSizeCodec<
-  PurchaseAssetInstructionDataArgs,
-  PurchaseAssetInstructionData
+export function getDelistAssetInstructionDataCodec(): FixedSizeCodec<
+  DelistAssetInstructionDataArgs,
+  DelistAssetInstructionData
 > {
   return combineCodec(
-    getPurchaseAssetInstructionDataEncoder(),
-    getPurchaseAssetInstructionDataDecoder()
+    getDelistAssetInstructionDataEncoder(),
+    getDelistAssetInstructionDataDecoder()
   );
 }
 
-export type PurchaseAssetAsyncInput<
-  TAccountBuyer extends string = string,
+export type DelistAssetAsyncInput<
+  TAccountPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountAsset extends string = string,
   TAccountCollection extends string = string,
   TAccountListing extends string = string,
   TAccountTradeHub extends string = string,
-  TAccountTreasury extends string = string,
-  TAccountProjectConfig extends string = string,
-  TAccountProtocolConfig extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountMplCoreProgram extends string = string,
 > = {
-  buyer: TransactionSigner<TAccountBuyer>;
-  owner: Address<TAccountOwner>;
+  payer: TransactionSigner<TAccountPayer>;
+  owner: TransactionSigner<TAccountOwner>;
   asset: Address<TAccountAsset>;
   collection?: Address<TAccountCollection>;
   listing?: Address<TAccountListing>;
   tradeHub: Address<TAccountTradeHub>;
-  treasury?: Address<TAccountTreasury>;
-  projectConfig: Address<TAccountProjectConfig>;
-  protocolConfig?: Address<TAccountProtocolConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
 };
 
-export async function getPurchaseAssetInstructionAsync<
-  TAccountBuyer extends string,
+export async function getDelistAssetInstructionAsync<
+  TAccountPayer extends string,
   TAccountOwner extends string,
   TAccountAsset extends string,
   TAccountCollection extends string,
   TAccountListing extends string,
   TAccountTradeHub extends string,
-  TAccountTreasury extends string,
-  TAccountProjectConfig extends string,
-  TAccountProtocolConfig extends string,
   TAccountSystemProgram extends string,
   TAccountMplCoreProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
 >(
-  input: PurchaseAssetAsyncInput<
-    TAccountBuyer,
+  input: DelistAssetAsyncInput<
+    TAccountPayer,
     TAccountOwner,
     TAccountAsset,
     TAccountCollection,
     TAccountListing,
     TAccountTradeHub,
-    TAccountTreasury,
-    TAccountProjectConfig,
-    TAccountProtocolConfig,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  PurchaseAssetInstruction<
+  DelistAssetInstruction<
     TProgramAddress,
-    TAccountBuyer,
+    TAccountPayer,
     TAccountOwner,
     TAccountAsset,
     TAccountCollection,
     TAccountListing,
     TAccountTradeHub,
-    TAccountTreasury,
-    TAccountProjectConfig,
-    TAccountProtocolConfig,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >
@@ -214,15 +186,12 @@ export async function getPurchaseAssetInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    buyer: { value: input.buyer ?? null, isWritable: true },
+    payer: { value: input.payer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: true },
-    listing: { value: input.listing ?? null, isWritable: false },
+    listing: { value: input.listing ?? null, isWritable: true },
     tradeHub: { value: input.tradeHub ?? null, isWritable: false },
-    treasury: { value: input.treasury ?? null, isWritable: true },
-    projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
   };
@@ -244,32 +213,6 @@ export async function getPurchaseAssetInstructionAsync<
       ],
     });
   }
-  if (!accounts.treasury.value) {
-    accounts.treasury.value = await getProgramDerivedAddress({
-      programAddress:
-        'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7' as Address<'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7'>,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
-        ),
-        getAddressEncoder().encode(expectAddress(accounts.projectConfig.value)),
-      ],
-    });
-  }
-  if (!accounts.protocolConfig.value) {
-    accounts.protocolConfig.value = await getProgramDerivedAddress({
-      programAddress:
-        'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7' as Address<'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7'>,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            115, 111, 108, 45, 109, 105, 110, 100, 45, 112, 114, 111, 116, 111,
-            99, 111, 108,
-          ])
-        ),
-      ],
-    });
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -282,101 +225,80 @@ export async function getPurchaseAssetInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.buyer),
+      getAccountMeta(accounts.payer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.asset),
       getAccountMeta(accounts.collection),
       getAccountMeta(accounts.listing),
       getAccountMeta(accounts.tradeHub),
-      getAccountMeta(accounts.treasury),
-      getAccountMeta(accounts.projectConfig),
-      getAccountMeta(accounts.protocolConfig),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.mplCoreProgram),
     ],
-    data: getPurchaseAssetInstructionDataEncoder().encode({}),
+    data: getDelistAssetInstructionDataEncoder().encode({}),
     programAddress,
-  } as PurchaseAssetInstruction<
+  } as DelistAssetInstruction<
     TProgramAddress,
-    TAccountBuyer,
+    TAccountPayer,
     TAccountOwner,
     TAccountAsset,
     TAccountCollection,
     TAccountListing,
     TAccountTradeHub,
-    TAccountTreasury,
-    TAccountProjectConfig,
-    TAccountProtocolConfig,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >);
 }
 
-export type PurchaseAssetInput<
-  TAccountBuyer extends string = string,
+export type DelistAssetInput<
+  TAccountPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountAsset extends string = string,
   TAccountCollection extends string = string,
   TAccountListing extends string = string,
   TAccountTradeHub extends string = string,
-  TAccountTreasury extends string = string,
-  TAccountProjectConfig extends string = string,
-  TAccountProtocolConfig extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountMplCoreProgram extends string = string,
 > = {
-  buyer: TransactionSigner<TAccountBuyer>;
-  owner: Address<TAccountOwner>;
+  payer: TransactionSigner<TAccountPayer>;
+  owner: TransactionSigner<TAccountOwner>;
   asset: Address<TAccountAsset>;
   collection?: Address<TAccountCollection>;
   listing: Address<TAccountListing>;
   tradeHub: Address<TAccountTradeHub>;
-  treasury: Address<TAccountTreasury>;
-  projectConfig: Address<TAccountProjectConfig>;
-  protocolConfig: Address<TAccountProtocolConfig>;
   systemProgram?: Address<TAccountSystemProgram>;
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
 };
 
-export function getPurchaseAssetInstruction<
-  TAccountBuyer extends string,
+export function getDelistAssetInstruction<
+  TAccountPayer extends string,
   TAccountOwner extends string,
   TAccountAsset extends string,
   TAccountCollection extends string,
   TAccountListing extends string,
   TAccountTradeHub extends string,
-  TAccountTreasury extends string,
-  TAccountProjectConfig extends string,
-  TAccountProtocolConfig extends string,
   TAccountSystemProgram extends string,
   TAccountMplCoreProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
 >(
-  input: PurchaseAssetInput<
-    TAccountBuyer,
+  input: DelistAssetInput<
+    TAccountPayer,
     TAccountOwner,
     TAccountAsset,
     TAccountCollection,
     TAccountListing,
     TAccountTradeHub,
-    TAccountTreasury,
-    TAccountProjectConfig,
-    TAccountProtocolConfig,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): PurchaseAssetInstruction<
+): DelistAssetInstruction<
   TProgramAddress,
-  TAccountBuyer,
+  TAccountPayer,
   TAccountOwner,
   TAccountAsset,
   TAccountCollection,
   TAccountListing,
   TAccountTradeHub,
-  TAccountTreasury,
-  TAccountProjectConfig,
-  TAccountProtocolConfig,
   TAccountSystemProgram,
   TAccountMplCoreProgram
 > {
@@ -386,15 +308,12 @@ export function getPurchaseAssetInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    buyer: { value: input.buyer ?? null, isWritable: true },
+    payer: { value: input.payer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: true },
-    listing: { value: input.listing ?? null, isWritable: false },
+    listing: { value: input.listing ?? null, isWritable: true },
     tradeHub: { value: input.tradeHub ?? null, isWritable: false },
-    treasury: { value: input.treasury ?? null, isWritable: true },
-    projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
   };
@@ -416,66 +335,57 @@ export function getPurchaseAssetInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.buyer),
+      getAccountMeta(accounts.payer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.asset),
       getAccountMeta(accounts.collection),
       getAccountMeta(accounts.listing),
       getAccountMeta(accounts.tradeHub),
-      getAccountMeta(accounts.treasury),
-      getAccountMeta(accounts.projectConfig),
-      getAccountMeta(accounts.protocolConfig),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.mplCoreProgram),
     ],
-    data: getPurchaseAssetInstructionDataEncoder().encode({}),
+    data: getDelistAssetInstructionDataEncoder().encode({}),
     programAddress,
-  } as PurchaseAssetInstruction<
+  } as DelistAssetInstruction<
     TProgramAddress,
-    TAccountBuyer,
+    TAccountPayer,
     TAccountOwner,
     TAccountAsset,
     TAccountCollection,
     TAccountListing,
     TAccountTradeHub,
-    TAccountTreasury,
-    TAccountProjectConfig,
-    TAccountProtocolConfig,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >);
 }
 
-export type ParsedPurchaseAssetInstruction<
+export type ParsedDelistAssetInstruction<
   TProgram extends string = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    buyer: TAccountMetas[0];
+    payer: TAccountMetas[0];
     owner: TAccountMetas[1];
     asset: TAccountMetas[2];
     collection?: TAccountMetas[3] | undefined;
     listing: TAccountMetas[4];
     tradeHub: TAccountMetas[5];
-    treasury: TAccountMetas[6];
-    projectConfig: TAccountMetas[7];
-    protocolConfig: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
-    mplCoreProgram: TAccountMetas[10];
+    systemProgram: TAccountMetas[6];
+    mplCoreProgram: TAccountMetas[7];
   };
-  data: PurchaseAssetInstructionData;
+  data: DelistAssetInstructionData;
 };
 
-export function parsePurchaseAssetInstruction<
+export function parseDelistAssetInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
-): ParsedPurchaseAssetInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+): ParsedDelistAssetInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 8) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -494,18 +404,15 @@ export function parsePurchaseAssetInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      buyer: getNextAccount(),
+      payer: getNextAccount(),
       owner: getNextAccount(),
       asset: getNextAccount(),
       collection: getNextOptionalAccount(),
       listing: getNextAccount(),
       tradeHub: getNextAccount(),
-      treasury: getNextAccount(),
-      projectConfig: getNextAccount(),
-      protocolConfig: getNextAccount(),
       systemProgram: getNextAccount(),
       mplCoreProgram: getNextAccount(),
     },
-    data: getPurchaseAssetInstructionDataDecoder().decode(instruction.data),
+    data: getDelistAssetInstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::errors::ProtocolError;
+
 #[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, Default)]
 pub struct Fee {
     pub amount: u64,
@@ -64,14 +66,22 @@ impl ProtocolConfig {
         }
     }
 
-    pub fn calculate_fee_amount(&self, operation: Operation, base_amount: Option<u64>) -> u64 {
+    pub fn calculate_fee_amount(
+        &self,
+        operation: Operation,
+        base_amount: Option<u64>,
+    ) -> Result<u64> {
         let fee = self.get_fee(operation);
         match fee.fee_type {
-            FeeType::Fixed => fee.amount,
-            FeeType::Percentage => base_amount
-                .and_then(|amount| amount.checked_mul(fee.amount))
-                .map(|result| result / 10_000)
-                .unwrap_or(fee.amount),
+            FeeType::Fixed => Ok(fee.amount),
+            FeeType::Percentage => {
+                let amount = base_amount.ok_or(error!(ProtocolError::FeeCalculationOverflow))?;
+                amount
+                    .checked_mul(fee.amount)
+                    .ok_or(error!(ProtocolError::FeeCalculationOverflow))?
+                    .checked_div(10_000)
+                    .ok_or(error!(ProtocolError::FeeCalculationOverflow)) // this is not an overflow!
+            }
         }
     }
 }

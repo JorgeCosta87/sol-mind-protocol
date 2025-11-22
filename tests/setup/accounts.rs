@@ -62,12 +62,16 @@ impl AccountHelper {
         let project_config_account = svm
             .get_account(project_config_pda)
             .expect("Project config account not found");
-        
+
         let project_config = ProjectConfig::from_bytes(&project_config_account.data)
             .expect("Failed to deserialize project config");
-        
+
         Pubkey::create_program_address(
-            &[b"treasury", project_config_pda.as_ref(), &[project_config.treasury_bump]],
+            &[
+                b"treasury",
+                project_config_pda.as_ref(),
+                &[project_config.treasury_bump],
+            ],
             &SOL_MIND_PROTOCOL_ID,
         )
         .expect("Failed to create treasury PDA")
@@ -124,11 +128,11 @@ impl AccountHelper {
         .unwrap()
     }
 
-    pub fn get_listing(svm: &LiteSVM, asset: &Pubkey, trade_hub: &Pubkey) -> Listing {
+    pub fn get_listing(svm: &LiteSVM, asset: &Pubkey, trade_hub: &Pubkey) -> Option<Listing> {
         let addr = Self::find_listing_pda(asset, trade_hub).0;
 
-        let account = svm.get_account(&addr).expect("Listing account not found");
+        let account = svm.get_account(&addr)?;
 
-        Listing::from_bytes(&account.data).expect("Failed to deserialize listing account")
+        Listing::from_bytes(&account.data).ok()
     }
 }

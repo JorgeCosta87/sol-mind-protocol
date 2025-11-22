@@ -1,8 +1,8 @@
 use litesvm::{types::TransactionResult, LiteSVM};
 use sol_mind_protocol_client::nft_operations::{
     instructions::{
-        CreateMinterConfigBuilder, CreateTradeHubBuilder, ListAssetBuilder, MintAssetBuilder,
-        PurchaseAssetBuilder,
+        CreateMinterConfigBuilder, CreateTradeHubBuilder, DelistAssetBuilder, ListAssetBuilder,
+        MintAssetBuilder, PurchaseAssetBuilder,
     },
     types::AssetsConfig,
 };
@@ -40,7 +40,6 @@ impl Instructions {
             .whitelist_transfer_addrs(whitelist_transfer_addrs)
             .fees(fees)
             .instruction();
-
 
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
@@ -331,5 +330,31 @@ impl Instructions {
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &buyer, signing_keypairs)
+    }
+
+    pub fn delist_asset(
+        svm: &mut LiteSVM,
+        payer: &Pubkey,
+        owner: &Pubkey,
+        mint: &Pubkey,
+        trade_hub_name: &str,
+        project_config_pda: &Pubkey,
+        collection: Option<Pubkey>,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let trade_hub_pda = AccountHelper::find_trade_hub_pda(trade_hub_name, project_config_pda).0;
+        let listing_pda = AccountHelper::find_listing_pda(&mint, &trade_hub_pda).0;
+
+        let instruction = DelistAssetBuilder::new()
+            .payer(*payer)
+            .owner(*owner)
+            .asset(*mint)
+            .listing(listing_pda)
+            .trade_hub(trade_hub_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
+            .collection(collection)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
 }

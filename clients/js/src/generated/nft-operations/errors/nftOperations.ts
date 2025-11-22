@@ -32,11 +32,14 @@ export const NFT_OPERATIONS_ERROR__ASSET_INVALID_TRANSFER_AUTHORITY = 0x1776; //
 export const NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN = 0x1777; // 6007
 /** NotAssetOwner: Not the asset owner */
 export const NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER = 0x1778; // 6008
+/** FeeCalculationOverflow: Fee calculation overflow */
+export const NFT_OPERATIONS_ERROR__FEE_CALCULATION_OVERFLOW = 0x1779; // 6009
 
 export type NftOperationsError =
   | typeof NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN
   | typeof NFT_OPERATIONS_ERROR__ASSET_INVALID_TRANSFER_AUTHORITY
   | typeof NFT_OPERATIONS_ERROR__COLLECTION_MISMATCH
+  | typeof NFT_OPERATIONS_ERROR__FEE_CALCULATION_OVERFLOW
   | typeof NFT_OPERATIONS_ERROR__INVALID_PLUGIN
   | typeof NFT_OPERATIONS_ERROR__MAX_SUPPLY_REACHED
   | typeof NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER
@@ -50,6 +53,7 @@ if (process.env.NODE_ENV !== 'production') {
     [NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN]: `Asset already frozen`,
     [NFT_OPERATIONS_ERROR__ASSET_INVALID_TRANSFER_AUTHORITY]: `Asset have an invalid transfer delegate authority`,
     [NFT_OPERATIONS_ERROR__COLLECTION_MISMATCH]: `Mismatch with the collection on minter config`,
+    [NFT_OPERATIONS_ERROR__FEE_CALCULATION_OVERFLOW]: `Fee calculation overflow`,
     [NFT_OPERATIONS_ERROR__INVALID_PLUGIN]: `PluginAuthorityPair could not be deserialized`,
     [NFT_OPERATIONS_ERROR__MAX_SUPPLY_REACHED]: `Max supply reached`,
     [NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER]: `Not the asset owner`,
