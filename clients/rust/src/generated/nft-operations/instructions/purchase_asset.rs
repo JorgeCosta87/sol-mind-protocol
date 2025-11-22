@@ -58,10 +58,7 @@ impl PurchaseAsset {
                 false,
             ));
         }
-        accounts.push(solana_instruction::AccountMeta::new_readonly(
-            self.listing,
-            false,
-        ));
+        accounts.push(solana_instruction::AccountMeta::new(self.listing, false));
         accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.trade_hub,
             false,
@@ -126,7 +123,7 @@ impl Default for PurchaseAssetInstructionData {
 ///   1. `[writable]` owner
 ///   2. `[writable]` asset
 ///   3. `[writable, optional]` collection
-///   4. `[]` listing
+///   4. `[writable]` listing
 ///   5. `[]` trade_hub
 ///   6. `[writable]` treasury
 ///   7. `[]` project_config
@@ -358,7 +355,7 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
                 false,
             ));
         }
-        accounts.push(solana_instruction::AccountMeta::new_readonly(
+        accounts.push(solana_instruction::AccountMeta::new(
             *self.listing.key,
             false,
         ));
@@ -435,7 +432,7 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
 ///   1. `[writable]` owner
 ///   2. `[writable]` asset
 ///   3. `[writable, optional]` collection
-///   4. `[]` listing
+///   4. `[writable]` listing
 ///   5. `[]` trade_hub
 ///   6. `[writable]` treasury
 ///   7. `[]` project_config

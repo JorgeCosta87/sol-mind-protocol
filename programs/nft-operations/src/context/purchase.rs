@@ -24,7 +24,9 @@ pub struct Purchase<'info> {
     #[account(mut)]
     pub collection: Option<UncheckedAccount<'info>>,
     #[account(
+        mut,
         has_one = owner @ ErrorCode::NotAssetOwner,
+        close = owner,
         seeds = [
             b"listing",
             asset.key().as_ref(),
