@@ -49,7 +49,6 @@ impl TestFixture {
             NFT_OPERATIONS_SO_PATH,
         );
 
-
         svm.airdrop(&payer.pubkey(), 10 * LAMPORTS_PER_SOL)
             .expect("Failed to fund payer");
 
@@ -274,6 +273,32 @@ impl TestFixture {
             &project_config_pda,
             collection,
             &[&self.payer.insecure_clone(), &asset_owner.insecure_clone()],
+        )
+        .expect("Failed to list asset");
+
+        self
+    }
+
+    pub fn purchase_asset(
+        mut self,
+        project_id: u64,
+        buyer: &Keypair,
+        mint: Pubkey,
+        asset_owner: &Keypair,
+        collection: Option<Pubkey>,
+    ) -> Self {
+        let project_config_pda =
+            AccountHelper::find_project_pda(&self.project_owner.pubkey(), project_id).0;
+
+        Instructions::purchase_asset(
+            &mut self.svm,
+            buyer.pubkey(),
+            &asset_owner.pubkey(),
+            &mint,
+            TRADE_HUB_NAME,
+            &project_config_pda,
+            collection,
+            &[&buyer.insecure_clone()],
         )
         .expect("Failed to list asset");
 

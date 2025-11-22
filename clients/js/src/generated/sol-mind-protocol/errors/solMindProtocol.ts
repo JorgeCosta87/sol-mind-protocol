@@ -22,9 +22,12 @@ export const SOL_MIND_PROTOCOL_ERROR__ADDRESS_NOT_WHITE_LISTED = 0x1771; // 6001
 export const SOL_MIND_PROTOCOL_ERROR__INSUFFICIENT_FUNDS = 0x1772; // 6002
 /** MinimumBalanceRequired: Minimun balance required for rend exempt */
 export const SOL_MIND_PROTOCOL_ERROR__MINIMUM_BALANCE_REQUIRED = 0x1773; // 6003
+/** FeeCalculationOverflow: Fee calculation overflow */
+export const SOL_MIND_PROTOCOL_ERROR__FEE_CALCULATION_OVERFLOW = 0x1774; // 6004
 
 export type SolMindProtocolError =
   | typeof SOL_MIND_PROTOCOL_ERROR__ADDRESS_NOT_WHITE_LISTED
+  | typeof SOL_MIND_PROTOCOL_ERROR__FEE_CALCULATION_OVERFLOW
   | typeof SOL_MIND_PROTOCOL_ERROR__INSUFFICIENT_FUNDS
   | typeof SOL_MIND_PROTOCOL_ERROR__MINIMUM_BALANCE_REQUIRED
   | typeof SOL_MIND_PROTOCOL_ERROR__UNAUTHORIZED;
@@ -35,6 +38,7 @@ let solMindProtocolErrorMessages:
 if (process.env.NODE_ENV !== 'production') {
   solMindProtocolErrorMessages = {
     [SOL_MIND_PROTOCOL_ERROR__ADDRESS_NOT_WHITE_LISTED]: `Address not whitelist for PDA transfer`,
+    [SOL_MIND_PROTOCOL_ERROR__FEE_CALCULATION_OVERFLOW]: `Fee calculation overflow`,
     [SOL_MIND_PROTOCOL_ERROR__INSUFFICIENT_FUNDS]: `Not enough funds.`,
     [SOL_MIND_PROTOCOL_ERROR__MINIMUM_BALANCE_REQUIRED]: `Minimun balance required for rend exempt`,
     [SOL_MIND_PROTOCOL_ERROR__UNAUTHORIZED]: `Unauthorized: Only admins can perform this action`,

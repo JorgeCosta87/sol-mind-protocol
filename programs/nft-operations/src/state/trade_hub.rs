@@ -1,6 +1,6 @@
-use std::ops::Div;
-
 use anchor_lang::prelude::*;
+
+use crate::errors::ErrorCode;
 
 #[account]
 #[derive(InitSpace)]
@@ -13,9 +13,11 @@ pub struct TradeHub {
 }
 
 impl TradeHub {
-    pub fn calculate_fee_amount(&self, price: u64) -> u64 {
-        price.checked_mul(self.fee_bps)
-        .expect("Overflow")
-        .checked_div(10_000).unwrap()
+    pub fn calculate_fee_amount(&self, price: u64) -> Result<u64> {
+        price
+            .checked_mul(self.fee_bps)
+            .ok_or(error!(ErrorCode::FeeCalculationOverflow))?
+            .checked_div(10_000)
+            .ok_or(error!(ErrorCode::FeeCalculationOverflow))
     }
 }

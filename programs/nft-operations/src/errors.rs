@@ -20,4 +20,6 @@ pub enum ErrorCode {
     AssetAlreadyFrozen,
     #[msg("Not the asset owner")]
     NotAssetOwner,
+    #[msg("Fee calculation overflow")]
+    FeeCalculationOverflow,
 }

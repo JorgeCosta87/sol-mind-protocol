@@ -8,6 +8,7 @@
 
 export * from './createMinterConfig';
 export * from './createTradeHub';
+export * from './delistAsset';
 export * from './listAsset';
 export * from './mintAsset';
 export * from './purchaseAsset';
