@@ -208,6 +208,19 @@ export async function getCreateProjectInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.protocolConfig.value) {
+    accounts.protocolConfig.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            115, 111, 108, 45, 109, 105, 110, 100, 45, 112, 114, 111, 116, 111,
+            99, 111, 108,
+          ])
+        ),
+      ],
+    });
+  }
   if (!accounts.projectConfig.value) {
     accounts.projectConfig.value = await getProgramDerivedAddress({
       programAddress,
@@ -217,6 +230,9 @@ export async function getCreateProjectInstructionAsync<
         ),
         getAddressEncoder().encode(expectAddress(accounts.owner.value)),
         getU64Encoder().encode(expectSome(args.projectId)),
+        getAddressEncoder().encode(
+          expectAddress(accounts.protocolConfig.value)
+        ),
       ],
     });
   }
@@ -228,19 +244,6 @@ export async function getCreateProjectInstructionAsync<
           new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
         ),
         getAddressEncoder().encode(expectAddress(accounts.projectConfig.value)),
-      ],
-    });
-  }
-  if (!accounts.protocolConfig.value) {
-    accounts.protocolConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            115, 111, 108, 45, 109, 105, 110, 100, 45, 112, 114, 111, 116, 111,
-            99, 111, 108,
-          ])
-        ),
       ],
     });
   }

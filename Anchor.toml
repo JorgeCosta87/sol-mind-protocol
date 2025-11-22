@@ -7,8 +7,7 @@ skip-lint = false
 
 [programs.localnet]
 sol_mind_protocol = "EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24"
-token_manager = "DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ"
-marketplace = "EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24"
+nft_operations = "DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ"
 
 [registry]
 url = "https://api.apr.dev"
@@ -18,7 +17,9 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "cargo test -- --show-output"
+test = "cargo test"
+test-verbose = "cargo test -- --show-output"
 test-sol-mind-protocol = "anchor test --program-name sol_mind_protocol"
-test-token-manager = "anchor test --program-name token_manager"
+test-nft-operations = "anchor test --program-name nft_operations"
+build = "bash scripts/build-and-generate.sh"
 generate = "bash scripts/generate-clients.sh"

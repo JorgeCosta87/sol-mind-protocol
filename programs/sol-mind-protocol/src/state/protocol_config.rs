@@ -70,7 +70,7 @@ impl ProtocolConfig {
             FeeType::Fixed => fee.amount,
             FeeType::Percentage => base_amount
                 .and_then(|amount| amount.checked_mul(fee.amount))
-                .map(|result| result / 10000)
+                .map(|result| result / 10_000)
                 .unwrap_or(fee.amount),
         }
     }

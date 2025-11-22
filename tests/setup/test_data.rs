@@ -1,8 +1,8 @@
 // Program paths and IDs
 pub const SOL_MIND_PROTOCOL_KEYPAIR_PATH: &str = "target/deploy/sol_mind_protocol-keypair.json";
 pub const SOL_MIND_PROTOCOL_SO_PATH: &str = "target/deploy/sol_mind_protocol.so";
-pub const TOKEN_MANAGER_KEYPAIR_PATH: &str = "target/deploy/token_manager-keypair.json";
-pub const TOKEN_MANAGER_SO_PATH: &str = "target/deploy/token_manager.so";
+pub const NFT_OPERATIONS_KEYPAIR_PATH: &str = "target/deploy/nft_operations-keypair.json";
+pub const NFT_OPERATIONS_SO_PATH: &str = "target/deploy/nft_operations.so";
 
 pub const MPL_CORE_PROGRAM_ID: &str = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d";
 pub const MPL_CORE_PROGRAM_SO_PATH: &str = "tests/programs/mpl_core.so";
@@ -19,6 +19,10 @@ pub const COLLECTION_URI: &str = "https://";
 
 pub const ASSET_NAME: &str = "Test Asset";
 pub const ASSET_URI: &str = "https://";
+
+pub const TRADE_HUB_NAME: &str = "Test Trade Hub";
+pub const TRADE_HUB_FEE_BPS: u64 = 350;
+pub const LISTING_PRICE: u64 = 100_000_000;
 
 pub const FEE_CREATE_PROJECT_AMOUNT: u64 = 1_000_000;
 pub const FEE_CREATE_MINTER_CONFIG_AMOUNT: u64 = 500_000;

@@ -6,12 +6,8 @@ echo "Generating clients for all programs..."
 echo "Generating sol-mind-protocol clients..."
 npx codama run --all -c codama-sol-mind-protocol.json
 
-echo "Generating token-manager clients..."
-npx codama run --all -c codama-token-manager.json
-
-echo "Generating marketplace clients..."
-npx codama run --all -c codama-marketplace.json
-
+echo "Generating nft-operations clients..."
+npx codama run --all -c codama-nft-operations.json
 
 echo "All clients generated successfully!"
 

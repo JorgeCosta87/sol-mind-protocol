@@ -17,6 +17,7 @@ pub struct CreateProject<'info> {
             b"project",
             owner.key.as_ref(),
             project_id.to_le_bytes().as_ref(),
+            protocol_config.key().as_ref(),
         ],
         bump,
     )]

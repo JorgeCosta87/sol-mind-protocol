@@ -1,8 +1,7 @@
 [workspace]
 members = [
     "programs/sol-mind-protocol",
-    "programs/token-manager",
-    "programs/marketplace"
+    "programs/nft-operations"
 ]
 resolver = "2"
 
@@ -29,18 +28,20 @@ name = "sol-mind-protocol"
 path = "tests/sol-mind-protocol.rs"
 
 [[test]]
-name = "token-manager"
-path = "tests/token-manager.rs"
+name = "nft-operations"
+path = "tests/nft-operations.rs"
 
 [dev-dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 litesvm = "0.8.1"
+
+
 litesvm-token = "0.8.1"
 solana-sdk = "3.0.0"
 spl-associated-token-account = "8.0.0"
 spl-token = "9.0.0"
 solana-sdk-ids = "3.1.0"
-solana-pubkey = "4.0.0"
+solana-pubkey = "3.0.0"
 solana-program = "2.0.0"
 mpl-core = { version = "0.11.1", features = ["anchor"] }
 sol-mind-protocol-client = { path = "clients/rust" }

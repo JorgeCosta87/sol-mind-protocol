@@ -7,13 +7,15 @@ use solana_sdk::{
 };
 use std::str::FromStr;
 
+use crate::setup::AccountHelper;
+
 use super::instructions::Instructions;
 use super::test_data::*;
 
 pub struct TestFixture {
     pub svm: LiteSVM,
     pub program_id_sol_mind: Pubkey,
-    pub program_id_token_manager: Pubkey,
+    pub program_id_nft_operations: Pubkey,
     pub payer: Keypair,
     pub admin_1: Keypair,
     pub admin_2: Keypair,
@@ -21,11 +23,12 @@ pub struct TestFixture {
     pub project_authority_1: Keypair,
     pub project_authority_2: Keypair,
     pub treasury: Pubkey,
+    pub collection: Keypair,
 }
 
 impl TestFixture {
     pub fn new() -> Self {
-        let mut svm = LiteSVM::new();
+        let mut svm = LiteSVM::new().with_sysvars();
         let payer = Keypair::new();
         let admin_1 = Keypair::new();
         let admin_2 = Keypair::new();
@@ -33,17 +36,19 @@ impl TestFixture {
         let project_authority_1 = Keypair::new();
         let project_authority_2 = Keypair::new();
         let treasury: Pubkey = Keypair::new().pubkey();
+        let collection = Keypair::new();
 
         let program_id_sol_mind = utils::deploy_program_from_keypair(
             &mut svm,
             SOL_MIND_PROTOCOL_KEYPAIR_PATH,
             SOL_MIND_PROTOCOL_SO_PATH,
         );
-        let program_id_token_manager = utils::deploy_program_from_keypair(
+        let program_id_nft_operations = utils::deploy_program_from_keypair(
             &mut svm,
-            TOKEN_MANAGER_KEYPAIR_PATH,
-            TOKEN_MANAGER_SO_PATH,
+            NFT_OPERATIONS_KEYPAIR_PATH,
+            NFT_OPERATIONS_SO_PATH,
         );
+
 
         svm.airdrop(&payer.pubkey(), 10 * LAMPORTS_PER_SOL)
             .expect("Failed to fund payer");
@@ -54,7 +59,7 @@ impl TestFixture {
         Self {
             svm,
             program_id_sol_mind,
-            program_id_token_manager,
+            program_id_nft_operations,
             payer,
             admin_1,
             admin_2,
@@ -62,6 +67,7 @@ impl TestFixture {
             project_authority_1,
             project_authority_2,
             treasury,
+            collection,
         }
     }
 
@@ -79,7 +85,6 @@ impl TestFixture {
 
         Instructions::initialize_protocol(
             &mut self.svm,
-            &self.program_id_sol_mind,
             vec![self.admin_1.pubkey(), self.admin_2.pubkey()],
             vec![self.admin_2.pubkey()],
             fees,
@@ -94,7 +99,6 @@ impl TestFixture {
     pub fn with_project_created(mut self, project_id: u64) -> Self {
         Instructions::create_project(
             &mut self.svm,
-            &self.program_id_sol_mind,
             project_id,
             DEFAULT_PROJECT_NAME.to_string(),
             DEFAULT_PROJECT_DESCRIPTION.to_string(),
@@ -117,7 +121,6 @@ impl TestFixture {
     pub fn with_initialize_project(mut self, project_id: u64) -> Self {
         Instructions::create_project(
             &mut self.svm,
-            &self.program_id_sol_mind,
             project_id,
             DEFAULT_PROJECT_NAME.to_string(),
             DEFAULT_PROJECT_DESCRIPTION.to_string(),
@@ -137,11 +140,38 @@ impl TestFixture {
         self
     }
 
-    pub fn with_minter_config(mut self, project_id: u64, collection: Option<&Keypair>) -> Self {
-        if collection.is_some() {
-            self = self.with_metaplex_core_program();
-        }
+    pub fn with_update_fees(mut self, fees: FeesStructure) -> Self {
+        Instructions::update_fees(
+            &mut self.svm,
+            fees,
+            self.admin_1.pubkey(),
+            self.payer.pubkey(),
+            &[&self.admin_1.insecure_clone()],
+        )
+        .expect("Failed to update fees");
 
+        self
+    }
+
+    pub fn with_update_single_fee(mut self, operation: Operation, fee: Fee) -> Self {
+        Instructions::update_single_fee(
+            &mut self.svm,
+            operation,
+            fee,
+            self.admin_1.pubkey(),
+            self.payer.pubkey(),
+            &[&self.admin_1.insecure_clone()],
+        )
+        .expect("Failed to update single fee");
+
+        self
+    }
+
+    pub fn with_create_minter_config(
+        mut self,
+        project_id: u64,
+        collection: Option<&Keypair>,
+    ) -> Self {
         let mut signers = vec![
             self.payer.insecure_clone(),
             self.project_authority_1.insecure_clone(),
@@ -155,8 +185,6 @@ impl TestFixture {
 
         Instructions::create_minter_config(
             &mut self.svm,
-            &self.program_id_token_manager,
-            &self.program_id_sol_mind,
             MINTER_NAME.to_string(),
             MINT_PRICE,
             MAX_SUPPLY,
@@ -175,31 +203,79 @@ impl TestFixture {
         self
     }
 
-    pub fn with_update_fees(mut self, fees: FeesStructure) -> Self {
-        Instructions::update_fees(
+    pub fn with_minted_asset(
+        mut self,
+        project_id: u64,
+        asset_owner: &Keypair,
+        mint: &Keypair,
+        collection: Option<Pubkey>,
+    ) -> Self {
+        Instructions::mint_asset(
             &mut self.svm,
-            &self.program_id_sol_mind,
-            fees,
-            self.admin_1.pubkey(),
+            MINTER_NAME,
+            Some(ASSET_NAME.to_string()),
+            Some(ASSET_URI.to_string()),
+            None,
+            project_id,
+            self.project_owner.pubkey(),
             self.payer.pubkey(),
-            &[&self.admin_1.insecure_clone()],
+            asset_owner.pubkey(),
+            mint.pubkey(),
+            self.project_authority_1.pubkey(),
+            collection,
+            &[
+                &self.payer.insecure_clone(),
+                &asset_owner.insecure_clone(),
+                &self.project_authority_1.insecure_clone(),
+                &mint.insecure_clone(),
+            ],
         )
-        .expect("Failed to update fees");
+        .expect("Failed to mint asset");
 
         self
     }
 
-    pub fn with_update_single_fee(mut self, operation: Operation, fee: Fee) -> Self {
-        Instructions::update_single_fee(
+    pub fn with_create_trade_hub(mut self, project_id: u64) -> Self {
+        Instructions::create_trade_hub(
             &mut self.svm,
-            &self.program_id_sol_mind,
-            operation,
-            fee,
-            self.admin_1.pubkey(),
+            TRADE_HUB_NAME.to_string(),
+            TRADE_HUB_FEE_BPS,
+            project_id,
+            self.project_owner.pubkey(),
             self.payer.pubkey(),
-            &[&self.admin_1.insecure_clone()],
+            self.project_authority_1.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.project_authority_1.insecure_clone(),
+            ],
         )
-        .expect("Failed to update single fee");
+        .expect("Failed to create trade hub");
+
+        self
+    }
+
+    pub fn with_list_asset(
+        mut self,
+        project_id: u64,
+        mint: Pubkey,
+        asset_owner: &Keypair,
+        collection: Option<Pubkey>,
+    ) -> Self {
+        let project_config_pda =
+            AccountHelper::find_project_pda(&self.project_owner.pubkey(), project_id).0;
+
+        Instructions::list_asset(
+            &mut self.svm,
+            LISTING_PRICE,
+            self.payer.pubkey(),
+            &asset_owner.pubkey(),
+            &mint,
+            TRADE_HUB_NAME,
+            &project_config_pda,
+            collection,
+            &[&self.payer.insecure_clone(), &asset_owner.insecure_clone()],
+        )
+        .expect("Failed to list asset");
 
         self
     }
