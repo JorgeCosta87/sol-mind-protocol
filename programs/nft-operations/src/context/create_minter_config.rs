@@ -2,10 +2,10 @@ use anchor_lang::prelude::*;
 
 use mpl_core::{instructions::CreateCollectionV1CpiBuilder, types::PluginAuthorityPair};
 use sol_mind_protocol::helpers::pay_protocol_fee;
+use sol_mind_protocol::{Operation, ProjectConfig, ProtocolConfig};
 
 use crate::errors::ErrorCode;
 use crate::state::{AssetsConfig, MinterConfig};
-use sol_mind_protocol::ProjectConfig;
 
 #[derive(Accounts)]
 #[instruction(name: String)]
@@ -36,20 +36,28 @@ pub struct CreateMinterConfig<'info> {
         seeds = [
             b"project",
             project_config.owner.as_ref(),
-            project_config.project_id.to_le_bytes().as_ref(),
             project_config.protocol_config.as_ref(),
+            &project_config.project_id.to_le_bytes(),
         ],
         bump = project_config.bump,
         seeds::program = sol_mind_protocol::ID,
     )]
     pub project_config: Account<'info, ProjectConfig>,
+
     #[account(
-        mut,
         seeds = [b"sol-mind-protocol"],
         bump = protocol_config.bump,
         seeds::program = sol_mind_protocol::ID,
     )]
-    pub protocol_config: Account<'info, sol_mind_protocol::ProtocolConfig>,
+    pub protocol_config: Account<'info, ProtocolConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"treasury", protocol_config.key().as_ref()],
+        bump,
+        seeds::program = sol_mind_protocol::ID,
+    )]
+    pub protocol_treasury: SystemAccount<'info>,
 
     pub system_program: Program<'info, System>,
     /// CHECK: Verified by address constraint to mpl_core::ID
@@ -71,8 +79,9 @@ impl<'info> CreateMinterConfig<'info> {
         pay_protocol_fee(
             &self.payer,
             &self.protocol_config,
+            &self.protocol_treasury.to_account_info(),
             &self.system_program,
-            sol_mind_protocol::Operation::CreateMinterConfig,
+            Operation::CreateMinterConfig,
             None,
         )?;
 

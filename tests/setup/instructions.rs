@@ -2,11 +2,12 @@ use litesvm::{types::TransactionResult, LiteSVM};
 use sol_mind_protocol_client::nft_operations::{
     instructions::{
         CreateMinterConfigBuilder, CreateTradeHubBuilder, DelistAssetBuilder, ListAssetBuilder,
-        MintAssetBuilder, PurchaseAssetBuilder,
+        MintAssetBuilder, PurchaseAssetBuilder, 
     },
     types::AssetsConfig,
 };
 use sol_mind_protocol_client::{
+    dac_manager::instructions::{CreateAgentBuilder, SubmitTaskBuilder},
     instructions::{
         CreateProjectBuilder, InitializeProtocolBuilder, TransferProjectFeesBuilder,
         TransferProtocolFeesBuilder, UpdateFeesBuilder, UpdateSingleFeeBuilder,
@@ -57,12 +58,14 @@ impl Instructions {
         let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
         let project_config_pda = AccountHelper::find_project_pda(&owner, project_id).0;
         let treasury_pda = AccountHelper::find_treasury_pda(&project_config_pda).0;
+        let protocol_treasury_pda = AccountHelper::find_treasury_pda(&protocol_config_pda).0;
 
         let instruction = CreateProjectBuilder::new()
             .owner(owner)
             .project_config(project_config_pda)
             .protocol_config(protocol_config_pda)
             .treasury(treasury_pda)
+            .protocol_treasury(protocol_treasury_pda)
             .system_program(SYSTEM_PROGRAM_ID)
             .project_id(project_id)
             .name(name)
@@ -144,11 +147,13 @@ impl Instructions {
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
         let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
+        let treasury_pda = AccountHelper::find_treasury_pda(&protocol_config_pda).0;
 
         let instruction = TransferProtocolFeesBuilder::new()
             .admin(admin)
             .to(to)
             .protocol_config(protocol_config_pda)
+            .treasury(treasury_pda)
             .amount(amount)
             .instruction();
 
@@ -173,6 +178,7 @@ impl Instructions {
         let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
         let project_config_pda = AccountHelper::find_project_pda(&owner, project_id).0;
         let minter_config_pda = AccountHelper::find_minter_config_pda(&project_config_pda, &name).0;
+        let protocol_treasury_pda = AccountHelper::find_treasury_pda(&protocol_config_pda).0;
 
         let mut builder = CreateMinterConfigBuilder::new();
 
@@ -185,7 +191,8 @@ impl Instructions {
             .collection(collection)
             .minter_config(minter_config_pda)
             .project_config(project_config_pda)
-            .protocol_config(protocol_config_pda);
+            .protocol_config(protocol_config_pda)
+            .protocol_treasury(protocol_treasury_pda);
 
         if let Some(assets_config) = assets_config {
             builder.assets_config(assets_config);
@@ -219,6 +226,7 @@ impl Instructions {
         let project_config_pda = AccountHelper::find_project_pda(&owner, project_id).0;
         let minter_config_pda =
             AccountHelper::find_minter_config_pda(&project_config_pda, minter_config_name).0;
+        let protocol_treasury_pda = AccountHelper::find_treasury_pda(&protocol_config_pda).0;
 
         let mut builder = MintAssetBuilder::new();
 
@@ -230,7 +238,8 @@ impl Instructions {
             .collection(collection)
             .minter_config(minter_config_pda)
             .project_config(project_config_pda)
-            .protocol_config(protocol_config_pda);
+            .protocol_config(protocol_config_pda)
+            .protocol_treasury(protocol_treasury_pda);
 
         if let Some(name) = name {
             builder.name(name);
@@ -258,6 +267,7 @@ impl Instructions {
         let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
         let project_config_pda = AccountHelper::find_project_pda(&owner, project_id).0;
         let trade_hub_pda = AccountHelper::find_trade_hub_pda(&name, &project_config_pda).0;
+        let protocol_treasury_pda = AccountHelper::find_treasury_pda(&protocol_config_pda).0;
 
         let instruction = CreateTradeHubBuilder::new()
             .payer(payer)
@@ -265,6 +275,7 @@ impl Instructions {
             .trade_hub(trade_hub_pda)
             .project_config(project_config_pda)
             .protocol_config(protocol_config_pda)
+            .protocol_treasury(protocol_treasury_pda)
             .system_program(SYSTEM_PROGRAM_ID)
             .name(name)
             .fee_bps(fee_bps)
@@ -309,12 +320,14 @@ impl Instructions {
         trade_hub_name: &str,
         project_config_pda: &Pubkey,
         collection: Option<Pubkey>,
+        max_price: u64,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
         let trade_hub_pda = AccountHelper::find_trade_hub_pda(trade_hub_name, project_config_pda).0;
         let listing_pda = AccountHelper::find_listing_pda(&mint, &trade_hub_pda).0;
         let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
         let treasury_pda = AccountHelper::get_treasury_pda(svm, project_config_pda);
+        let protocol_treasury_pda = AccountHelper::find_treasury_pda(&protocol_config_pda).0;
 
         let instruction = PurchaseAssetBuilder::new()
             .buyer(buyer)
@@ -326,7 +339,9 @@ impl Instructions {
             .treasury(treasury_pda)
             .project_config(*project_config_pda)
             .protocol_config(protocol_config_pda)
+            .protocol_treasury(protocol_treasury_pda)
             .system_program(SYSTEM_PROGRAM_ID)
+            .max_price(max_price)
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &buyer, signing_keypairs)
@@ -356,5 +371,60 @@ impl Instructions {
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn create_agent(
+        svm: &mut LiteSVM,
+        agent_id: u64,
+        compute_node: Pubkey,
+        owner: Pubkey,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let agent_pda = AccountHelper::find_agent_pda(&owner, agent_id).0;
+        let task_request_pda = AccountHelper::find_task_request_pda(&agent_pda).0;
+        let task_result_pda = AccountHelper::find_task_result_pda(&agent_pda).0;
+
+        let instruction = CreateAgentBuilder::new()
+            .payer(payer)
+            .owner(owner)
+            .agent(agent_pda)
+            .task_request(task_request_pda)
+            .task_result(task_result_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
+            .agent_id(agent_id)
+            .compute_node(compute_node)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn submit_task(
+        svm: &mut LiteSVM,
+        agent_id: u64,
+        owner: Pubkey,
+        task_data: Vec<u8>,
+        target_compute_node: Option<Pubkey>,
+        compute_node_signer: Pubkey,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let agent_pda = AccountHelper::find_agent_pda(&owner, agent_id).0;
+        let task_request_pda = AccountHelper::find_task_request_pda(&agent_pda).0;
+
+        let mut builder = SubmitTaskBuilder::new();
+        builder
+            .payer(payer)
+            .compute_node(compute_node_signer)
+            .task_request(task_request_pda)
+            .agent(agent_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
+            .task_data(task_data);
+
+        if let Some(target) = target_compute_node {
+            builder.compute_node_arg(target);
+        }
+
+        utils::send_transaction(svm, &[builder.instruction()], &payer, signing_keypairs)
     }
 }

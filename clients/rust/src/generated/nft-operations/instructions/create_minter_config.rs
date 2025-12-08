@@ -26,6 +26,8 @@ pub struct CreateMinterConfig {
 
     pub protocol_config: solana_pubkey::Pubkey,
 
+    pub protocol_treasury: solana_pubkey::Pubkey,
+
     pub system_program: solana_pubkey::Pubkey,
 
     pub mpl_core_program: solana_pubkey::Pubkey,
@@ -45,7 +47,7 @@ impl CreateMinterConfig {
         args: CreateMinterConfigInstructionArgs,
         remaining_accounts: &[solana_instruction::AccountMeta],
     ) -> solana_instruction::Instruction {
-        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
         accounts.push(solana_instruction::AccountMeta::new(self.payer, true));
         accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
         if let Some(collection) = self.collection {
@@ -64,8 +66,12 @@ impl CreateMinterConfig {
             self.project_config,
             false,
         ));
-        accounts.push(solana_instruction::AccountMeta::new(
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.protocol_config,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new(
+            self.protocol_treasury,
             false,
         ));
         accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -141,9 +147,10 @@ impl CreateMinterConfigInstructionArgs {
 ///   2. `[writable, signer, optional]` collection
 ///   3. `[writable]` minter_config
 ///   4. `[]` project_config
-///   5. `[writable]` protocol_config
-///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   7. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
+///   5. `[]` protocol_config
+///   6. `[writable]` protocol_treasury
+///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   8. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
 #[derive(Clone, Debug, Default)]
 pub struct CreateMinterConfigBuilder {
     payer: Option<solana_pubkey::Pubkey>,
@@ -152,6 +159,7 @@ pub struct CreateMinterConfigBuilder {
     minter_config: Option<solana_pubkey::Pubkey>,
     project_config: Option<solana_pubkey::Pubkey>,
     protocol_config: Option<solana_pubkey::Pubkey>,
+    protocol_treasury: Option<solana_pubkey::Pubkey>,
     system_program: Option<solana_pubkey::Pubkey>,
     mpl_core_program: Option<solana_pubkey::Pubkey>,
     name: Option<String>,
@@ -196,6 +204,11 @@ impl CreateMinterConfigBuilder {
     #[inline(always)]
     pub fn protocol_config(&mut self, protocol_config: solana_pubkey::Pubkey) -> &mut Self {
         self.protocol_config = Some(protocol_config);
+        self
+    }
+    #[inline(always)]
+    pub fn protocol_treasury(&mut self, protocol_treasury: solana_pubkey::Pubkey) -> &mut Self {
+        self.protocol_treasury = Some(protocol_treasury);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -267,6 +280,9 @@ impl CreateMinterConfigBuilder {
             minter_config: self.minter_config.expect("minter_config is not set"),
             project_config: self.project_config.expect("project_config is not set"),
             protocol_config: self.protocol_config.expect("protocol_config is not set"),
+            protocol_treasury: self
+                .protocol_treasury
+                .expect("protocol_treasury is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
@@ -301,6 +317,8 @@ pub struct CreateMinterConfigCpiAccounts<'a, 'b> {
 
     pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
 
+    pub protocol_treasury: &'b solana_account_info::AccountInfo<'a>,
+
     pub system_program: &'b solana_account_info::AccountInfo<'a>,
 
     pub mpl_core_program: &'b solana_account_info::AccountInfo<'a>,
@@ -323,6 +341,8 @@ pub struct CreateMinterConfigCpi<'a, 'b> {
 
     pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
 
+    pub protocol_treasury: &'b solana_account_info::AccountInfo<'a>,
+
     pub system_program: &'b solana_account_info::AccountInfo<'a>,
 
     pub mpl_core_program: &'b solana_account_info::AccountInfo<'a>,
@@ -344,6 +364,7 @@ impl<'a, 'b> CreateMinterConfigCpi<'a, 'b> {
             minter_config: accounts.minter_config,
             project_config: accounts.project_config,
             protocol_config: accounts.protocol_config,
+            protocol_treasury: accounts.protocol_treasury,
             system_program: accounts.system_program,
             mpl_core_program: accounts.mpl_core_program,
             __args: args,
@@ -372,7 +393,7 @@ impl<'a, 'b> CreateMinterConfigCpi<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
         remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)],
     ) -> solana_program_error::ProgramResult {
-        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
         accounts.push(solana_instruction::AccountMeta::new(*self.payer.key, true));
         accounts.push(solana_instruction::AccountMeta::new(
             *self.authority.key,
@@ -394,8 +415,12 @@ impl<'a, 'b> CreateMinterConfigCpi<'a, 'b> {
             *self.project_config.key,
             false,
         ));
-        accounts.push(solana_instruction::AccountMeta::new(
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.protocol_config.key,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new(
+            *self.protocol_treasury.key,
             false,
         ));
         accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -424,7 +449,7 @@ impl<'a, 'b> CreateMinterConfigCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(9 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(10 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.payer.clone());
         account_infos.push(self.authority.clone());
@@ -434,6 +459,7 @@ impl<'a, 'b> CreateMinterConfigCpi<'a, 'b> {
         account_infos.push(self.minter_config.clone());
         account_infos.push(self.project_config.clone());
         account_infos.push(self.protocol_config.clone());
+        account_infos.push(self.protocol_treasury.clone());
         account_infos.push(self.system_program.clone());
         account_infos.push(self.mpl_core_program.clone());
         remaining_accounts
@@ -457,9 +483,10 @@ impl<'a, 'b> CreateMinterConfigCpi<'a, 'b> {
 ///   2. `[writable, signer, optional]` collection
 ///   3. `[writable]` minter_config
 ///   4. `[]` project_config
-///   5. `[writable]` protocol_config
-///   6. `[]` system_program
-///   7. `[]` mpl_core_program
+///   5. `[]` protocol_config
+///   6. `[writable]` protocol_treasury
+///   7. `[]` system_program
+///   8. `[]` mpl_core_program
 #[derive(Clone, Debug)]
 pub struct CreateMinterConfigCpiBuilder<'a, 'b> {
     instruction: Box<CreateMinterConfigCpiBuilderInstruction<'a, 'b>>,
@@ -475,6 +502,7 @@ impl<'a, 'b> CreateMinterConfigCpiBuilder<'a, 'b> {
             minter_config: None,
             project_config: None,
             protocol_config: None,
+            protocol_treasury: None,
             system_program: None,
             mpl_core_program: None,
             name: None,
@@ -528,6 +556,14 @@ impl<'a, 'b> CreateMinterConfigCpiBuilder<'a, 'b> {
         protocol_config: &'b solana_account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.protocol_config = Some(protocol_config);
+        self
+    }
+    #[inline(always)]
+    pub fn protocol_treasury(
+        &mut self,
+        protocol_treasury: &'b solana_account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.protocol_treasury = Some(protocol_treasury);
         self
     }
     #[inline(always)]
@@ -653,6 +689,11 @@ impl<'a, 'b> CreateMinterConfigCpiBuilder<'a, 'b> {
                 .protocol_config
                 .expect("protocol_config is not set"),
 
+            protocol_treasury: self
+                .instruction
+                .protocol_treasury
+                .expect("protocol_treasury is not set"),
+
             system_program: self
                 .instruction
                 .system_program
@@ -680,6 +721,7 @@ struct CreateMinterConfigCpiBuilderInstruction<'a, 'b> {
     minter_config: Option<&'b solana_account_info::AccountInfo<'a>>,
     project_config: Option<&'b solana_account_info::AccountInfo<'a>>,
     protocol_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    protocol_treasury: Option<&'b solana_account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
     mpl_core_program: Option<&'b solana_account_info::AccountInfo<'a>>,
     name: Option<String>,

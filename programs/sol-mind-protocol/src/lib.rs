@@ -9,6 +9,7 @@ pub mod state;
 
 pub use context::*;
 pub use errors::*;
+pub use helpers::*;
 pub use state::*;
 
 #[program]
@@ -56,6 +57,6 @@ pub mod sol_mind_protocol {
     }
 
     pub fn transfer_protocol_fees(ctx: Context<ProtocolFeesTransfer>, amount: u64) -> Result<()> {
-        ctx.accounts.transfer_protocol_fees(amount)
+        ctx.accounts.transfer_protocol_fees(amount, &ctx.bumps)
     }
 }

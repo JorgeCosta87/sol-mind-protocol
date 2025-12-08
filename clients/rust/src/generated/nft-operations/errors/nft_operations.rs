@@ -40,6 +40,12 @@ pub enum NftOperationsError {
     /// 6009 - Fee calculation overflow
     #[error("Fee calculation overflow")]
     FeeCalculationOverflow = 0x1779,
+    /// 6010 - The price exceeded the maximum price allowed
+    #[error("The price exceeded the maximum price allowed")]
+    MaxPriceExceeded = 0x177A,
+    /// 6011 - Math operation overflow
+    #[error("Math operation overflow")]
+    MathOverflow = 0x177B,
 }
 
 impl From<NftOperationsError> for solana_program_error::ProgramError {

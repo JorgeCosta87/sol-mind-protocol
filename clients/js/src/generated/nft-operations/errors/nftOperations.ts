@@ -34,6 +34,10 @@ export const NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN = 0x1777; // 6007
 export const NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER = 0x1778; // 6008
 /** FeeCalculationOverflow: Fee calculation overflow */
 export const NFT_OPERATIONS_ERROR__FEE_CALCULATION_OVERFLOW = 0x1779; // 6009
+/** MaxPriceExceeded: The price exceeded the maximum price allowed */
+export const NFT_OPERATIONS_ERROR__MAX_PRICE_EXCEEDED = 0x177a; // 6010
+/** MathOverflow: Math operation overflow */
+export const NFT_OPERATIONS_ERROR__MATH_OVERFLOW = 0x177b; // 6011
 
 export type NftOperationsError =
   | typeof NFT_OPERATIONS_ERROR__ASSET_ALREADY_FROZEN
@@ -41,6 +45,8 @@ export type NftOperationsError =
   | typeof NFT_OPERATIONS_ERROR__COLLECTION_MISMATCH
   | typeof NFT_OPERATIONS_ERROR__FEE_CALCULATION_OVERFLOW
   | typeof NFT_OPERATIONS_ERROR__INVALID_PLUGIN
+  | typeof NFT_OPERATIONS_ERROR__MATH_OVERFLOW
+  | typeof NFT_OPERATIONS_ERROR__MAX_PRICE_EXCEEDED
   | typeof NFT_OPERATIONS_ERROR__MAX_SUPPLY_REACHED
   | typeof NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER
   | typeof NFT_OPERATIONS_ERROR__REQUIRED_URI
@@ -55,6 +61,8 @@ if (process.env.NODE_ENV !== 'production') {
     [NFT_OPERATIONS_ERROR__COLLECTION_MISMATCH]: `Mismatch with the collection on minter config`,
     [NFT_OPERATIONS_ERROR__FEE_CALCULATION_OVERFLOW]: `Fee calculation overflow`,
     [NFT_OPERATIONS_ERROR__INVALID_PLUGIN]: `PluginAuthorityPair could not be deserialized`,
+    [NFT_OPERATIONS_ERROR__MATH_OVERFLOW]: `Math operation overflow`,
+    [NFT_OPERATIONS_ERROR__MAX_PRICE_EXCEEDED]: `The price exceeded the maximum price allowed`,
     [NFT_OPERATIONS_ERROR__MAX_SUPPLY_REACHED]: `Max supply reached`,
     [NFT_OPERATIONS_ERROR__NOT_ASSET_OWNER]: `Not the asset owner`,
     [NFT_OPERATIONS_ERROR__REQUIRED_URI]: `Collection requires an uri`,

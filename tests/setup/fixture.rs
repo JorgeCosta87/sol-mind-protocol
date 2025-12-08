@@ -16,6 +16,7 @@ pub struct TestFixture {
     pub svm: LiteSVM,
     pub program_id_sol_mind: Pubkey,
     pub program_id_nft_operations: Pubkey,
+    pub program_id_dac_manager: Pubkey,
     pub payer: Keypair,
     pub admin_1: Keypair,
     pub admin_2: Keypair,
@@ -48,6 +49,11 @@ impl TestFixture {
             NFT_OPERATIONS_KEYPAIR_PATH,
             NFT_OPERATIONS_SO_PATH,
         );
+        let program_id_dac_manager = utils::deploy_program_from_keypair(
+            &mut svm,
+            DAC_MANAGER_KEYPAIR_PATH,
+            DAC_MANAGER_SO_PATH,
+        );
 
         svm.airdrop(&payer.pubkey(), 10 * LAMPORTS_PER_SOL)
             .expect("Failed to fund payer");
@@ -59,6 +65,7 @@ impl TestFixture {
             svm,
             program_id_sol_mind,
             program_id_nft_operations,
+            program_id_dac_manager,
             payer,
             admin_1,
             admin_2,
@@ -323,6 +330,7 @@ impl TestFixture {
             TRADE_HUB_NAME,
             &project_config_pda,
             collection,
+            LISTING_PRICE,
             &[&buyer.insecure_clone()],
         )
         .expect("Failed to list asset");

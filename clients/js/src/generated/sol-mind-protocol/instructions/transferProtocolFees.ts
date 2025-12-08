@@ -10,6 +10,7 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
@@ -27,13 +28,18 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/kit';
 import { SOL_MIND_PROTOCOL_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from '../shared';
 
 export const TRANSFER_PROTOCOL_FEES_DISCRIMINATOR = new Uint8Array([
   142, 148, 70, 57, 116, 166, 82, 111,
@@ -50,6 +56,10 @@ export type TransferProtocolFeesInstruction<
   TAccountAdmin extends string | AccountMeta<string> = string,
   TAccountTo extends string | AccountMeta<string> = string,
   TAccountProtocolConfig extends string | AccountMeta<string> = string,
+  TAccountTreasury extends string | AccountMeta<string> = string,
+  TAccountSystemProgram extends
+    | string
+    | AccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -61,8 +71,14 @@ export type TransferProtocolFeesInstruction<
         : TAccountAdmin,
       TAccountTo extends string ? WritableAccount<TAccountTo> : TAccountTo,
       TAccountProtocolConfig extends string
-        ? WritableAccount<TAccountProtocolConfig>
+        ? ReadonlyAccount<TAccountProtocolConfig>
         : TAccountProtocolConfig,
+      TAccountTreasury extends string
+        ? WritableAccount<TAccountTreasury>
+        : TAccountTreasury,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -110,10 +126,14 @@ export type TransferProtocolFeesAsyncInput<
   TAccountAdmin extends string = string,
   TAccountTo extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountTreasury extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   to: Address<TAccountTo>;
   protocolConfig?: Address<TAccountProtocolConfig>;
+  treasury?: Address<TAccountTreasury>;
+  systemProgram?: Address<TAccountSystemProgram>;
   amount: TransferProtocolFeesInstructionDataArgs['amount'];
 };
 
@@ -121,12 +141,16 @@ export async function getTransferProtocolFeesInstructionAsync<
   TAccountAdmin extends string,
   TAccountTo extends string,
   TAccountProtocolConfig extends string,
+  TAccountTreasury extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
   input: TransferProtocolFeesAsyncInput<
     TAccountAdmin,
     TAccountTo,
-    TAccountProtocolConfig
+    TAccountProtocolConfig,
+    TAccountTreasury,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
@@ -134,7 +158,9 @@ export async function getTransferProtocolFeesInstructionAsync<
     TProgramAddress,
     TAccountAdmin,
     TAccountTo,
-    TAccountProtocolConfig
+    TAccountProtocolConfig,
+    TAccountTreasury,
+    TAccountSystemProgram
   >
 > {
   // Program address.
@@ -145,7 +171,9 @@ export async function getTransferProtocolFeesInstructionAsync<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
     to: { value: input.to ?? null, isWritable: true },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    treasury: { value: input.treasury ?? null, isWritable: true },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -169,6 +197,23 @@ export async function getTransferProtocolFeesInstructionAsync<
       ],
     });
   }
+  if (!accounts.treasury.value) {
+    accounts.treasury.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
+        ),
+        getAddressEncoder().encode(
+          expectAddress(accounts.protocolConfig.value)
+        ),
+      ],
+    });
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
@@ -176,6 +221,8 @@ export async function getTransferProtocolFeesInstructionAsync<
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.to),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.treasury),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getTransferProtocolFeesInstructionDataEncoder().encode(
       args as TransferProtocolFeesInstructionDataArgs
@@ -185,7 +232,9 @@ export async function getTransferProtocolFeesInstructionAsync<
     TProgramAddress,
     TAccountAdmin,
     TAccountTo,
-    TAccountProtocolConfig
+    TAccountProtocolConfig,
+    TAccountTreasury,
+    TAccountSystemProgram
   >);
 }
 
@@ -193,10 +242,14 @@ export type TransferProtocolFeesInput<
   TAccountAdmin extends string = string,
   TAccountTo extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountTreasury extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   to: Address<TAccountTo>;
   protocolConfig: Address<TAccountProtocolConfig>;
+  treasury: Address<TAccountTreasury>;
+  systemProgram?: Address<TAccountSystemProgram>;
   amount: TransferProtocolFeesInstructionDataArgs['amount'];
 };
 
@@ -204,19 +257,25 @@ export function getTransferProtocolFeesInstruction<
   TAccountAdmin extends string,
   TAccountTo extends string,
   TAccountProtocolConfig extends string,
+  TAccountTreasury extends string,
+  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
   input: TransferProtocolFeesInput<
     TAccountAdmin,
     TAccountTo,
-    TAccountProtocolConfig
+    TAccountProtocolConfig,
+    TAccountTreasury,
+    TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): TransferProtocolFeesInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountTo,
-  TAccountProtocolConfig
+  TAccountProtocolConfig,
+  TAccountTreasury,
+  TAccountSystemProgram
 > {
   // Program address.
   const programAddress =
@@ -226,7 +285,9 @@ export function getTransferProtocolFeesInstruction<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
     to: { value: input.to ?? null, isWritable: true },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    treasury: { value: input.treasury ?? null, isWritable: true },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -236,12 +297,20 @@ export function getTransferProtocolFeesInstruction<
   // Original args.
   const args = { ...input };
 
+  // Resolve default values.
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.to),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.treasury),
+      getAccountMeta(accounts.systemProgram),
     ],
     data: getTransferProtocolFeesInstructionDataEncoder().encode(
       args as TransferProtocolFeesInstructionDataArgs
@@ -251,7 +320,9 @@ export function getTransferProtocolFeesInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountTo,
-    TAccountProtocolConfig
+    TAccountProtocolConfig,
+    TAccountTreasury,
+    TAccountSystemProgram
   >);
 }
 
@@ -264,6 +335,8 @@ export type ParsedTransferProtocolFeesInstruction<
     admin: TAccountMetas[0];
     to: TAccountMetas[1];
     protocolConfig: TAccountMetas[2];
+    treasury: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
   data: TransferProtocolFeesInstructionData;
 };
@@ -276,7 +349,7 @@ export function parseTransferProtocolFeesInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedTransferProtocolFeesInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -292,6 +365,8 @@ export function parseTransferProtocolFeesInstruction<
       admin: getNextAccount(),
       to: getNextAccount(),
       protocolConfig: getNextAccount(),
+      treasury: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getTransferProtocolFeesInstructionDataDecoder().decode(
       instruction.data

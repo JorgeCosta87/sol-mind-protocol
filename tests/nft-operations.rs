@@ -20,7 +20,8 @@ fn test_create_minter_config_without_collection() {
         .with_initialize_project(PROJECT_1_ID);
 
     let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda();
-    let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+    let (protocol_treasury_pda, _) = AccountHelper::find_treasury_pda(&protocol_config_pda);
+    let protocol_treasury_initial_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
     let result = Instructions::create_minter_config(
         &mut fixture.svm,
@@ -50,7 +51,8 @@ fn test_create_minter_config_without_collection() {
                 AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID);
             let minter_config =
                 AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
-            let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let protocol_treasury_final_balance =
+                utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
             assert_eq!(minter_config.name, MINTER_NAME);
             assert_eq!(minter_config.mint_price, MINT_PRICE);
@@ -59,8 +61,8 @@ fn test_create_minter_config_without_collection() {
             assert_eq!(minter_config.collection, None);
             assert_eq!(minter_config.assets_config, None);
             assert_eq!(
-                protocol_final_balance,
-                protocol_initial_balance + protocol_config.fees.create_minter_config.amount
+                protocol_treasury_final_balance,
+                protocol_treasury_initial_balance + protocol_config.fees.create_minter_config.amount
             );
         }
         Err(e) => {
@@ -266,7 +268,8 @@ fn test_mint_asset_without_assets_config_and_collection() {
         .with_create_minter_config(PROJECT_1_ID, None);
 
     let (protocol_config_pda, _) = AccountHelper::find_protocol_config_pda();
-    let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+    let (protocol_treasury_pda, _) = AccountHelper::find_treasury_pda(&protocol_config_pda);
+    let protocol_treasury_initial_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
     let asset_owner = Keypair::new();
     let mint = Keypair::new();
@@ -302,7 +305,8 @@ fn test_mint_asset_without_assets_config_and_collection() {
             let minter_config =
                 AccountHelper::get_minter_config(&fixture.svm, &project_config_pda, &MINTER_NAME);
             let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
-            let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let protocol_treasury_final_balance =
+                utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
             assert_eq!(minter_config.collection, None);
             assert_eq!(minter_config.mints_counter, 1);
@@ -314,8 +318,8 @@ fn test_mint_asset_without_assets_config_and_collection() {
                 asset_owner.pubkey().to_string()
             );
             assert_eq!(
-                protocol_final_balance,
-                protocol_initial_balance + protocol_config.fees.mint_asset.amount
+                protocol_treasury_final_balance,
+                protocol_treasury_initial_balance + protocol_config.fees.mint_asset.amount
             );
         }
         Err(e) => {
@@ -572,7 +576,8 @@ fn test_create_trade_hub() {
         .with_initialize_project(PROJECT_1_ID);
 
     let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
-    let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+    let (protocol_treasury_pda, _) = AccountHelper::find_treasury_pda(&protocol_config_pda);
+    let protocol_treasury_initial_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
     let result = Instructions::create_trade_hub(
         &mut fixture.svm,
@@ -597,7 +602,8 @@ fn test_create_trade_hub() {
                 AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
             let trade_hub =
                 AccountHelper::get_trade_hub(&fixture.svm, TRADE_HUB_NAME, &project_config_pda);
-            let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let protocol_treasury_final_balance =
+                utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
             let trade_hub_pda =
                 AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
@@ -609,8 +615,8 @@ fn test_create_trade_hub() {
             assert_eq!(trade_hub.fee_bps, TRADE_HUB_FEE_BPS);
             assert_eq!(trade_hub.project, project_config_pda);
             assert_eq!(
-                protocol_final_balance,
-                protocol_initial_balance + protocol_config.fees.create_trade_hub.amount
+                protocol_treasury_final_balance,
+                protocol_treasury_initial_balance + protocol_config.fees.create_trade_hub.amount
             );
         }
         Err(e) => {
@@ -867,15 +873,16 @@ fn test_purchase_asset() {
     let project_config_pda =
         AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
     let protocol_config = AccountHelper::get_protocol_config(&fixture.svm);
-    let protocol_initial_balance =
-        utils::get_lamports(&fixture.svm, &AccountHelper::find_protocol_config_pda().0);
+    let protocol_treasury_pda = AccountHelper::find_treasury_pda(&AccountHelper::find_protocol_config_pda().0).0;
+    let protocol_treasury_initial_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
     let treasury_pda = AccountHelper::find_treasury_pda(&project_config_pda).0;
-    let treasury_initial_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
-    let owner_initial_balance = utils::get_lamports(&fixture.svm, &asset_owner.pubkey());
     let trade_hub_pda =
         AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
     let listing_pda =
         AccountHelper::find_listing_pda(&mint.pubkey(), &trade_hub_pda).0;
+
+    let treasury_initial_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
+    let owner_initial_balance = utils::get_lamports(&fixture.svm, &asset_owner.pubkey());
     let listing_balance = utils::get_lamports(&fixture.svm, &listing_pda);
 
     let result = Instructions::purchase_asset(
@@ -886,6 +893,7 @@ fn test_purchase_asset() {
         TRADE_HUB_NAME,
         &project_config_pda,
         None,
+        LISTING_PRICE,
         &[&buyer.insecure_clone()],
     );
 
@@ -895,8 +903,8 @@ fn test_purchase_asset() {
 
             let listing = AccountHelper::get_listing(&fixture.svm, &mint.pubkey(), &trade_hub_pda);
             let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
-            let protocol_final_balance =
-                utils::get_lamports(&fixture.svm, &AccountHelper::find_protocol_config_pda().0);
+            let protocol_treasury_final_balance =
+                utils::get_lamports(&fixture.svm, &AccountHelper::find_treasury_pda(&AccountHelper::find_protocol_config_pda().0).0);
             let treasury_final_balance = utils::get_lamports(&fixture.svm, &treasury_pda);
             let owner_final_balance = utils::get_lamports(&fixture.svm, &asset_owner.pubkey());
 
@@ -930,8 +938,8 @@ fn test_purchase_asset() {
                 .unwrap();
 
             assert_eq!(
-                protocol_final_balance,
-                protocol_initial_balance + protocol_fee,
+                protocol_treasury_final_balance,
+                protocol_treasury_initial_balance + protocol_fee,
                 "Protocol should receive fee"
             );
             assert_eq!(
@@ -1000,6 +1008,7 @@ fn test_purchase_asset_with_collection() {
         TRADE_HUB_NAME,
         &project_config_pda,
         Some(collection.pubkey()),
+        LISTING_PRICE,
         &[&buyer.insecure_clone()],
     );
 
@@ -1089,9 +1098,9 @@ fn test_deslist_asset_and_than_list_again() {
 
     let project_config_pda =
         AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
-
     let trade_hub_pda =
         AccountHelper::find_trade_hub_pda(TRADE_HUB_NAME, &project_config_pda).0;
+        
     let listing = AccountHelper::get_listing(&fixture.svm, &mint.pubkey(), &trade_hub_pda);
     let asset = MplUtils::get_asset(&fixture.svm, &mint.pubkey());
 

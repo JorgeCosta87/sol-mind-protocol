@@ -67,6 +67,7 @@ export type CreateProjectInstruction<
   TAccountProjectConfig extends string | AccountMeta<string> = string,
   TAccountTreasury extends string | AccountMeta<string> = string,
   TAccountProtocolConfig extends string | AccountMeta<string> = string,
+  TAccountProtocolTreasury extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -86,8 +87,11 @@ export type CreateProjectInstruction<
         ? WritableAccount<TAccountTreasury>
         : TAccountTreasury,
       TAccountProtocolConfig extends string
-        ? WritableAccount<TAccountProtocolConfig>
+        ? ReadonlyAccount<TAccountProtocolConfig>
         : TAccountProtocolConfig,
+      TAccountProtocolTreasury extends string
+        ? WritableAccount<TAccountProtocolTreasury>
+        : TAccountProtocolTreasury,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -148,12 +152,14 @@ export type CreateProjectAsyncInput<
   TAccountProjectConfig extends string = string,
   TAccountTreasury extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
   projectConfig?: Address<TAccountProjectConfig>;
   treasury?: Address<TAccountTreasury>;
   protocolConfig?: Address<TAccountProtocolConfig>;
+  protocolTreasury?: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   projectId: CreateProjectInstructionDataArgs['projectId'];
   name: CreateProjectInstructionDataArgs['name'];
@@ -166,6 +172,7 @@ export async function getCreateProjectInstructionAsync<
   TAccountProjectConfig extends string,
   TAccountTreasury extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
@@ -174,6 +181,7 @@ export async function getCreateProjectInstructionAsync<
     TAccountProjectConfig,
     TAccountTreasury,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -184,6 +192,7 @@ export async function getCreateProjectInstructionAsync<
     TAccountProjectConfig,
     TAccountTreasury,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >
 > {
@@ -196,7 +205,11 @@ export async function getCreateProjectInstructionAsync<
     owner: { value: input.owner ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: true },
     treasury: { value: input.treasury ?? null, isWritable: true },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -229,10 +242,10 @@ export async function getCreateProjectInstructionAsync<
           new Uint8Array([112, 114, 111, 106, 101, 99, 116])
         ),
         getAddressEncoder().encode(expectAddress(accounts.owner.value)),
-        getU64Encoder().encode(expectSome(args.projectId)),
         getAddressEncoder().encode(
           expectAddress(accounts.protocolConfig.value)
         ),
+        getU64Encoder().encode(expectSome(args.projectId)),
       ],
     });
   }
@@ -244,6 +257,19 @@ export async function getCreateProjectInstructionAsync<
           new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
         ),
         getAddressEncoder().encode(expectAddress(accounts.projectConfig.value)),
+      ],
+    });
+  }
+  if (!accounts.protocolTreasury.value) {
+    accounts.protocolTreasury.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
+        ),
+        getAddressEncoder().encode(
+          expectAddress(accounts.protocolConfig.value)
+        ),
       ],
     });
   }
@@ -259,6 +285,7 @@ export async function getCreateProjectInstructionAsync<
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.treasury),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
     ],
     data: getCreateProjectInstructionDataEncoder().encode(
@@ -271,6 +298,7 @@ export async function getCreateProjectInstructionAsync<
     TAccountProjectConfig,
     TAccountTreasury,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >);
 }
@@ -280,12 +308,14 @@ export type CreateProjectInput<
   TAccountProjectConfig extends string = string,
   TAccountTreasury extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
   projectConfig: Address<TAccountProjectConfig>;
   treasury: Address<TAccountTreasury>;
   protocolConfig: Address<TAccountProtocolConfig>;
+  protocolTreasury: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   projectId: CreateProjectInstructionDataArgs['projectId'];
   name: CreateProjectInstructionDataArgs['name'];
@@ -298,6 +328,7 @@ export function getCreateProjectInstruction<
   TAccountProjectConfig extends string,
   TAccountTreasury extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SOL_MIND_PROTOCOL_PROGRAM_ADDRESS,
 >(
@@ -306,6 +337,7 @@ export function getCreateProjectInstruction<
     TAccountProjectConfig,
     TAccountTreasury,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -315,6 +347,7 @@ export function getCreateProjectInstruction<
   TAccountProjectConfig,
   TAccountTreasury,
   TAccountProtocolConfig,
+  TAccountProtocolTreasury,
   TAccountSystemProgram
 > {
   // Program address.
@@ -326,7 +359,11 @@ export function getCreateProjectInstruction<
     owner: { value: input.owner ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: true },
     treasury: { value: input.treasury ?? null, isWritable: true },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -350,6 +387,7 @@ export function getCreateProjectInstruction<
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.treasury),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
     ],
     data: getCreateProjectInstructionDataEncoder().encode(
@@ -362,6 +400,7 @@ export function getCreateProjectInstruction<
     TAccountProjectConfig,
     TAccountTreasury,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >);
 }
@@ -376,7 +415,8 @@ export type ParsedCreateProjectInstruction<
     projectConfig: TAccountMetas[1];
     treasury: TAccountMetas[2];
     protocolConfig: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    protocolTreasury: TAccountMetas[4];
+    systemProgram: TAccountMetas[5];
   };
   data: CreateProjectInstructionData;
 };
@@ -389,7 +429,7 @@ export function parseCreateProjectInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedCreateProjectInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -406,6 +446,7 @@ export function parseCreateProjectInstruction<
       projectConfig: getNextAccount(),
       treasury: getNextAccount(),
       protocolConfig: getNextAccount(),
+      protocolTreasury: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getCreateProjectInstructionDataDecoder().decode(instruction.data),

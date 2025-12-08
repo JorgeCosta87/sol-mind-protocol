@@ -16,6 +16,8 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU64Decoder,
+  getU64Encoder,
   transformEncoder,
   type AccountMeta,
   type AccountSignerMeta,
@@ -60,6 +62,7 @@ export type PurchaseAssetInstruction<
   TAccountTreasury extends string | AccountMeta<string> = string,
   TAccountProjectConfig extends string | AccountMeta<string> = string,
   TAccountProtocolConfig extends string | AccountMeta<string> = string,
+  TAccountProtocolTreasury extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -97,8 +100,11 @@ export type PurchaseAssetInstruction<
         ? ReadonlyAccount<TAccountProjectConfig>
         : TAccountProjectConfig,
       TAccountProtocolConfig extends string
-        ? WritableAccount<TAccountProtocolConfig>
+        ? ReadonlyAccount<TAccountProtocolConfig>
         : TAccountProtocolConfig,
+      TAccountProtocolTreasury extends string
+        ? WritableAccount<TAccountProtocolTreasury>
+        : TAccountProtocolTreasury,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -111,13 +117,17 @@ export type PurchaseAssetInstruction<
 
 export type PurchaseAssetInstructionData = {
   discriminator: ReadonlyUint8Array;
+  maxPrice: bigint;
 };
 
-export type PurchaseAssetInstructionDataArgs = {};
+export type PurchaseAssetInstructionDataArgs = { maxPrice: number | bigint };
 
 export function getPurchaseAssetInstructionDataEncoder(): FixedSizeEncoder<PurchaseAssetInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['maxPrice', getU64Encoder()],
+    ]),
     (value) => ({ ...value, discriminator: PURCHASE_ASSET_DISCRIMINATOR })
   );
 }
@@ -125,6 +135,7 @@ export function getPurchaseAssetInstructionDataEncoder(): FixedSizeEncoder<Purch
 export function getPurchaseAssetInstructionDataDecoder(): FixedSizeDecoder<PurchaseAssetInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['maxPrice', getU64Decoder()],
   ]);
 }
 
@@ -148,6 +159,7 @@ export type PurchaseAssetAsyncInput<
   TAccountTreasury extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountMplCoreProgram extends string = string,
 > = {
@@ -160,8 +172,10 @@ export type PurchaseAssetAsyncInput<
   treasury?: Address<TAccountTreasury>;
   projectConfig: Address<TAccountProjectConfig>;
   protocolConfig?: Address<TAccountProtocolConfig>;
+  protocolTreasury?: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
+  maxPrice: PurchaseAssetInstructionDataArgs['maxPrice'];
 };
 
 export async function getPurchaseAssetInstructionAsync<
@@ -174,6 +188,7 @@ export async function getPurchaseAssetInstructionAsync<
   TAccountTreasury extends string,
   TAccountProjectConfig extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TAccountMplCoreProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
@@ -188,6 +203,7 @@ export async function getPurchaseAssetInstructionAsync<
     TAccountTreasury,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >,
@@ -204,6 +220,7 @@ export async function getPurchaseAssetInstructionAsync<
     TAccountTreasury,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >
@@ -222,7 +239,11 @@ export async function getPurchaseAssetInstructionAsync<
     tradeHub: { value: input.tradeHub ?? null, isWritable: false },
     treasury: { value: input.treasury ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
   };
@@ -230,6 +251,9 @@ export async function getPurchaseAssetInstructionAsync<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.listing.value) {
@@ -270,6 +294,20 @@ export async function getPurchaseAssetInstructionAsync<
       ],
     });
   }
+  if (!accounts.protocolTreasury.value) {
+    accounts.protocolTreasury.value = await getProgramDerivedAddress({
+      programAddress:
+        'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7' as Address<'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7'>,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
+        ),
+        getAddressEncoder().encode(
+          expectAddress(accounts.protocolConfig.value)
+        ),
+      ],
+    });
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -291,10 +329,13 @@ export async function getPurchaseAssetInstructionAsync<
       getAccountMeta(accounts.treasury),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.mplCoreProgram),
     ],
-    data: getPurchaseAssetInstructionDataEncoder().encode({}),
+    data: getPurchaseAssetInstructionDataEncoder().encode(
+      args as PurchaseAssetInstructionDataArgs
+    ),
     programAddress,
   } as PurchaseAssetInstruction<
     TProgramAddress,
@@ -307,6 +348,7 @@ export async function getPurchaseAssetInstructionAsync<
     TAccountTreasury,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >);
@@ -322,6 +364,7 @@ export type PurchaseAssetInput<
   TAccountTreasury extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountMplCoreProgram extends string = string,
 > = {
@@ -334,8 +377,10 @@ export type PurchaseAssetInput<
   treasury: Address<TAccountTreasury>;
   projectConfig: Address<TAccountProjectConfig>;
   protocolConfig: Address<TAccountProtocolConfig>;
+  protocolTreasury: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
+  maxPrice: PurchaseAssetInstructionDataArgs['maxPrice'];
 };
 
 export function getPurchaseAssetInstruction<
@@ -348,6 +393,7 @@ export function getPurchaseAssetInstruction<
   TAccountTreasury extends string,
   TAccountProjectConfig extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TAccountMplCoreProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
@@ -362,6 +408,7 @@ export function getPurchaseAssetInstruction<
     TAccountTreasury,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >,
@@ -377,6 +424,7 @@ export function getPurchaseAssetInstruction<
   TAccountTreasury,
   TAccountProjectConfig,
   TAccountProtocolConfig,
+  TAccountProtocolTreasury,
   TAccountSystemProgram,
   TAccountMplCoreProgram
 > {
@@ -394,7 +442,11 @@ export function getPurchaseAssetInstruction<
     tradeHub: { value: input.tradeHub ?? null, isWritable: false },
     treasury: { value: input.treasury ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
   };
@@ -402,6 +454,9 @@ export function getPurchaseAssetInstruction<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -425,10 +480,13 @@ export function getPurchaseAssetInstruction<
       getAccountMeta(accounts.treasury),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.mplCoreProgram),
     ],
-    data: getPurchaseAssetInstructionDataEncoder().encode({}),
+    data: getPurchaseAssetInstructionDataEncoder().encode(
+      args as PurchaseAssetInstructionDataArgs
+    ),
     programAddress,
   } as PurchaseAssetInstruction<
     TProgramAddress,
@@ -441,6 +499,7 @@ export function getPurchaseAssetInstruction<
     TAccountTreasury,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >);
@@ -461,8 +520,9 @@ export type ParsedPurchaseAssetInstruction<
     treasury: TAccountMetas[6];
     projectConfig: TAccountMetas[7];
     protocolConfig: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
-    mplCoreProgram: TAccountMetas[10];
+    protocolTreasury: TAccountMetas[9];
+    systemProgram: TAccountMetas[10];
+    mplCoreProgram: TAccountMetas[11];
   };
   data: PurchaseAssetInstructionData;
 };
@@ -475,7 +535,7 @@ export function parsePurchaseAssetInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedPurchaseAssetInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+  if (instruction.accounts.length < 12) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -503,6 +563,7 @@ export function parsePurchaseAssetInstruction<
       treasury: getNextAccount(),
       projectConfig: getNextAccount(),
       protocolConfig: getNextAccount(),
+      protocolTreasury: getNextAccount(),
       systemProgram: getNextAccount(),
       mplCoreProgram: getNextAccount(),
     },

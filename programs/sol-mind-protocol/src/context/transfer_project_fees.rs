@@ -16,8 +16,8 @@ pub struct TransferProjectFees<'info> {
         seeds = [
             b"project",
             owner.key.as_ref(),
-            project_config.project_id.to_le_bytes().as_ref(),
             project_config.protocol_config.as_ref(),
+            project_config.project_id.to_le_bytes().as_ref(),
         ],
         bump = project_config.bump,
     )]

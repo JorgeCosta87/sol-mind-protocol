@@ -78,6 +78,7 @@ export type CreateMinterConfigInstruction<
   TAccountMinterConfig extends string | AccountMeta<string> = string,
   TAccountProjectConfig extends string | AccountMeta<string> = string,
   TAccountProtocolConfig extends string | AccountMeta<string> = string,
+  TAccountProtocolTreasury extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -108,8 +109,11 @@ export type CreateMinterConfigInstruction<
         ? ReadonlyAccount<TAccountProjectConfig>
         : TAccountProjectConfig,
       TAccountProtocolConfig extends string
-        ? WritableAccount<TAccountProtocolConfig>
+        ? ReadonlyAccount<TAccountProtocolConfig>
         : TAccountProtocolConfig,
+      TAccountProtocolTreasury extends string
+        ? WritableAccount<TAccountProtocolTreasury>
+        : TAccountProtocolTreasury,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -205,6 +209,7 @@ export type CreateMinterConfigAsyncInput<
   TAccountMinterConfig extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountMplCoreProgram extends string = string,
 > = {
@@ -214,6 +219,7 @@ export type CreateMinterConfigAsyncInput<
   minterConfig?: Address<TAccountMinterConfig>;
   projectConfig: Address<TAccountProjectConfig>;
   protocolConfig?: Address<TAccountProtocolConfig>;
+  protocolTreasury?: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
   name: CreateMinterConfigInstructionDataArgs['name'];
@@ -231,6 +237,7 @@ export async function getCreateMinterConfigInstructionAsync<
   TAccountMinterConfig extends string,
   TAccountProjectConfig extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TAccountMplCoreProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
@@ -242,6 +249,7 @@ export async function getCreateMinterConfigInstructionAsync<
     TAccountMinterConfig,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >,
@@ -255,6 +263,7 @@ export async function getCreateMinterConfigInstructionAsync<
     TAccountMinterConfig,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >
@@ -270,7 +279,11 @@ export async function getCreateMinterConfigInstructionAsync<
     collection: { value: input.collection ?? null, isWritable: true },
     minterConfig: { value: input.minterConfig ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
   };
@@ -313,6 +326,20 @@ export async function getCreateMinterConfigInstructionAsync<
       ],
     });
   }
+  if (!accounts.protocolTreasury.value) {
+    accounts.protocolTreasury.value = await getProgramDerivedAddress({
+      programAddress:
+        'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7' as Address<'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7'>,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
+        ),
+        getAddressEncoder().encode(
+          expectAddress(accounts.protocolConfig.value)
+        ),
+      ],
+    });
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -331,6 +358,7 @@ export async function getCreateMinterConfigInstructionAsync<
       getAccountMeta(accounts.minterConfig),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.mplCoreProgram),
     ],
@@ -346,6 +374,7 @@ export async function getCreateMinterConfigInstructionAsync<
     TAccountMinterConfig,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >);
@@ -358,6 +387,7 @@ export type CreateMinterConfigInput<
   TAccountMinterConfig extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountMplCoreProgram extends string = string,
 > = {
@@ -367,6 +397,7 @@ export type CreateMinterConfigInput<
   minterConfig: Address<TAccountMinterConfig>;
   projectConfig: Address<TAccountProjectConfig>;
   protocolConfig: Address<TAccountProtocolConfig>;
+  protocolTreasury: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
   name: CreateMinterConfigInstructionDataArgs['name'];
@@ -384,6 +415,7 @@ export function getCreateMinterConfigInstruction<
   TAccountMinterConfig extends string,
   TAccountProjectConfig extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TAccountMplCoreProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
@@ -395,6 +427,7 @@ export function getCreateMinterConfigInstruction<
     TAccountMinterConfig,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >,
@@ -407,6 +440,7 @@ export function getCreateMinterConfigInstruction<
   TAccountMinterConfig,
   TAccountProjectConfig,
   TAccountProtocolConfig,
+  TAccountProtocolTreasury,
   TAccountSystemProgram,
   TAccountMplCoreProgram
 > {
@@ -421,7 +455,11 @@ export function getCreateMinterConfigInstruction<
     collection: { value: input.collection ?? null, isWritable: true },
     minterConfig: { value: input.minterConfig ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
   };
@@ -452,6 +490,7 @@ export function getCreateMinterConfigInstruction<
       getAccountMeta(accounts.minterConfig),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.mplCoreProgram),
     ],
@@ -467,6 +506,7 @@ export function getCreateMinterConfigInstruction<
     TAccountMinterConfig,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram,
     TAccountMplCoreProgram
   >);
@@ -484,8 +524,9 @@ export type ParsedCreateMinterConfigInstruction<
     minterConfig: TAccountMetas[3];
     projectConfig: TAccountMetas[4];
     protocolConfig: TAccountMetas[5];
-    systemProgram: TAccountMetas[6];
-    mplCoreProgram: TAccountMetas[7];
+    protocolTreasury: TAccountMetas[6];
+    systemProgram: TAccountMetas[7];
+    mplCoreProgram: TAccountMetas[8];
   };
   data: CreateMinterConfigInstructionData;
 };
@@ -498,7 +539,7 @@ export function parseCreateMinterConfigInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedCreateMinterConfigInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 8) {
+  if (instruction.accounts.length < 9) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -523,6 +564,7 @@ export function parseCreateMinterConfigInstruction<
       minterConfig: getNextAccount(),
       projectConfig: getNextAccount(),
       protocolConfig: getNextAccount(),
+      protocolTreasury: getNextAccount(),
       systemProgram: getNextAccount(),
       mplCoreProgram: getNextAccount(),
     },

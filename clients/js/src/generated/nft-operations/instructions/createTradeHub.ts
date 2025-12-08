@@ -65,6 +65,7 @@ export type CreateTradeHubInstruction<
   TAccountTradeHub extends string | AccountMeta<string> = string,
   TAccountProjectConfig extends string | AccountMeta<string> = string,
   TAccountProtocolConfig extends string | AccountMeta<string> = string,
+  TAccountProtocolTreasury extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | AccountMeta<string> = '11111111111111111111111111111111',
@@ -88,8 +89,11 @@ export type CreateTradeHubInstruction<
         ? ReadonlyAccount<TAccountProjectConfig>
         : TAccountProjectConfig,
       TAccountProtocolConfig extends string
-        ? WritableAccount<TAccountProtocolConfig>
+        ? ReadonlyAccount<TAccountProtocolConfig>
         : TAccountProtocolConfig,
+      TAccountProtocolTreasury extends string
+        ? WritableAccount<TAccountProtocolTreasury>
+        : TAccountProtocolTreasury,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -143,6 +147,7 @@ export type CreateTradeHubAsyncInput<
   TAccountTradeHub extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   payer: TransactionSigner<TAccountPayer>;
@@ -150,6 +155,7 @@ export type CreateTradeHubAsyncInput<
   tradeHub?: Address<TAccountTradeHub>;
   projectConfig: Address<TAccountProjectConfig>;
   protocolConfig?: Address<TAccountProtocolConfig>;
+  protocolTreasury?: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   name: CreateTradeHubInstructionDataArgs['name'];
   feeBps: CreateTradeHubInstructionDataArgs['feeBps'];
@@ -161,6 +167,7 @@ export async function getCreateTradeHubInstructionAsync<
   TAccountTradeHub extends string,
   TAccountProjectConfig extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
 >(
@@ -170,6 +177,7 @@ export async function getCreateTradeHubInstructionAsync<
     TAccountTradeHub,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -181,6 +189,7 @@ export async function getCreateTradeHubInstructionAsync<
     TAccountTradeHub,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >
 > {
@@ -194,7 +203,11 @@ export async function getCreateTradeHubInstructionAsync<
     authority: { value: input.authority ?? null, isWritable: true },
     tradeHub: { value: input.tradeHub ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -234,6 +247,20 @@ export async function getCreateTradeHubInstructionAsync<
       ],
     });
   }
+  if (!accounts.protocolTreasury.value) {
+    accounts.protocolTreasury.value = await getProgramDerivedAddress({
+      programAddress:
+        'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7' as Address<'Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7'>,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([116, 114, 101, 97, 115, 117, 114, 121])
+        ),
+        getAddressEncoder().encode(
+          expectAddress(accounts.protocolConfig.value)
+        ),
+      ],
+    });
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -247,6 +274,7 @@ export async function getCreateTradeHubInstructionAsync<
       getAccountMeta(accounts.tradeHub),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
     ],
     data: getCreateTradeHubInstructionDataEncoder().encode(
@@ -260,6 +288,7 @@ export async function getCreateTradeHubInstructionAsync<
     TAccountTradeHub,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >);
 }
@@ -270,6 +299,7 @@ export type CreateTradeHubInput<
   TAccountTradeHub extends string = string,
   TAccountProjectConfig extends string = string,
   TAccountProtocolConfig extends string = string,
+  TAccountProtocolTreasury extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   payer: TransactionSigner<TAccountPayer>;
@@ -277,6 +307,7 @@ export type CreateTradeHubInput<
   tradeHub: Address<TAccountTradeHub>;
   projectConfig: Address<TAccountProjectConfig>;
   protocolConfig: Address<TAccountProtocolConfig>;
+  protocolTreasury: Address<TAccountProtocolTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   name: CreateTradeHubInstructionDataArgs['name'];
   feeBps: CreateTradeHubInstructionDataArgs['feeBps'];
@@ -288,6 +319,7 @@ export function getCreateTradeHubInstruction<
   TAccountTradeHub extends string,
   TAccountProjectConfig extends string,
   TAccountProtocolConfig extends string,
+  TAccountProtocolTreasury extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof NFT_OPERATIONS_PROGRAM_ADDRESS,
 >(
@@ -297,6 +329,7 @@ export function getCreateTradeHubInstruction<
     TAccountTradeHub,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -307,6 +340,7 @@ export function getCreateTradeHubInstruction<
   TAccountTradeHub,
   TAccountProjectConfig,
   TAccountProtocolConfig,
+  TAccountProtocolTreasury,
   TAccountSystemProgram
 > {
   // Program address.
@@ -319,7 +353,11 @@ export function getCreateTradeHubInstruction<
     authority: { value: input.authority ?? null, isWritable: true },
     tradeHub: { value: input.tradeHub ?? null, isWritable: true },
     projectConfig: { value: input.projectConfig ?? null, isWritable: false },
-    protocolConfig: { value: input.protocolConfig ?? null, isWritable: true },
+    protocolConfig: { value: input.protocolConfig ?? null, isWritable: false },
+    protocolTreasury: {
+      value: input.protocolTreasury ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -344,6 +382,7 @@ export function getCreateTradeHubInstruction<
       getAccountMeta(accounts.tradeHub),
       getAccountMeta(accounts.projectConfig),
       getAccountMeta(accounts.protocolConfig),
+      getAccountMeta(accounts.protocolTreasury),
       getAccountMeta(accounts.systemProgram),
     ],
     data: getCreateTradeHubInstructionDataEncoder().encode(
@@ -357,6 +396,7 @@ export function getCreateTradeHubInstruction<
     TAccountTradeHub,
     TAccountProjectConfig,
     TAccountProtocolConfig,
+    TAccountProtocolTreasury,
     TAccountSystemProgram
   >);
 }
@@ -372,7 +412,8 @@ export type ParsedCreateTradeHubInstruction<
     tradeHub: TAccountMetas[2];
     projectConfig: TAccountMetas[3];
     protocolConfig: TAccountMetas[4];
-    systemProgram: TAccountMetas[5];
+    protocolTreasury: TAccountMetas[5];
+    systemProgram: TAccountMetas[6];
   };
   data: CreateTradeHubInstructionData;
 };
@@ -385,7 +426,7 @@ export function parseCreateTradeHubInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>
 ): ParsedCreateTradeHubInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 6) {
+  if (instruction.accounts.length < 7) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -403,6 +444,7 @@ export function parseCreateTradeHubInstruction<
       tradeHub: getNextAccount(),
       projectConfig: getNextAccount(),
       protocolConfig: getNextAccount(),
+      protocolTreasury: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getCreateTradeHubInstructionDataDecoder().decode(instruction.data),
