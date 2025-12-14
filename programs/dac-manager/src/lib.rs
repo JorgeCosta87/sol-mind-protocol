@@ -17,21 +17,15 @@ pub mod dac_manager {
         ctx: Context<RegisterComputeNode>,
         node_pubkey: Pubkey,
     ) -> Result<()> {
-        ctx.accounts
-            .register_compute_node(node_pubkey, &ctx.bumps)
+        ctx.accounts.register_compute_node(node_pubkey, &ctx.bumps)
     }
 
     pub fn claim_compute_node(ctx: Context<ClaimComputeNode>, node_info_cid: String) -> Result<()> {
         ctx.accounts.claim_compute_node(node_info_cid)
     }
 
-    pub fn create_agent(
-        ctx: Context<CreateAgent>,
-        agent_id: u64,
-        public: bool,
-    ) -> Result<()> {
-        ctx.accounts
-            .create_agent(agent_id, public, &ctx.bumps)
+    pub fn create_agent(ctx: Context<CreateAgent>, agent_id: u64, public: bool) -> Result<()> {
+        ctx.accounts.create_agent(agent_id, public, &ctx.bumps)
     }
 
     pub fn submit_task(ctx: Context<SubmitTask>, data: Vec<u8>) -> Result<()> {

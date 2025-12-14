@@ -28,7 +28,8 @@ pub struct SubmitTask<'info> {
 impl<'info> SubmitTask<'info> {
     pub fn submit_task(&mut self, data: Vec<u8>) -> Result<()> {
         require!(
-            self.submitter.key() == self.agent.owner || self.submitter.key() == self.agent.compute_node,
+            self.submitter.key() == self.agent.owner
+                || self.submitter.key() == self.agent.compute_node,
             ErrorCode::Unauthorized
         );
         require!(
