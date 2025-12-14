@@ -20,8 +20,8 @@ impl Config {
         let rpc_websocket_url = std::env::var("RPC_WEBSOCKET_URL")
             .context("RPC_WEBSOCKET_URL environment variable not set")?;
 
-        let keypair_path = std::env::var("COMPUTE_NODE_KEYPAIR_PATH")
-            .context("COMPUTE_NODE_KEYPAIR_PATH environment variable not set")?;
+        let keypair_path =
+            std::env::var("COMPUTE_NODE_KEYPAIR_PATH").unwrap();
         let keypair_path = PathBuf::from(keypair_path);
 
         let keypair = Self::load_keypair_from_file(&keypair_path)

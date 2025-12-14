@@ -14,16 +14,31 @@ async fn main() -> Result<()> {
 
     println!("Starting compute node...");
     println!("Node pubkey: {}", config.node_pubkey());
+    println!("RPC URL: {}", config.rpc_url);
+    println!("RPC WebSocket URL: {}", config.rpc_websocket_url);
 
-    let keypair = config.node_keypair.insecure_clone();
-    let solana_adapter = SolanaAdapter::new(config.rpc_url.clone(), keypair).await;
+    let solana_adapter = SolanaAdapter::new(
+        config.rpc_url.clone(), config.rpc_websocket_url.clone(),
+         config.node_keypair.insecure_clone()
+    ).await;
+
+    startup_checks(&config, &solana_adapter).await?;
 
     let node_registry_service = NodeRegistryService::new(solana_adapter);
+    node_registry_service.check_and_claim_pending_node(&config.node_pubkey()).await?;
+    
+    tokio::signal::ctrl_c().await?;
+    println!("Shutting down...");
 
-    if let Some(signature) = node_registry_service.check_and_claim_pending_node(&config.node_pubkey()).await? {
-        println!("✅ Claimed compute node: {}", signature);
-    } else {
-        println!("ℹ️  Compute node not pending or not found");
+    Ok(())
+}
+
+
+async fn startup_checks(config: &Config, solana_adapter: &SolanaAdapter) -> Result<()> {
+    let balance = solana_adapter.get_balance(&config.node_pubkey()).await?;
+    println!("Balance: {}", balance);
+    if balance < 1_000_000 {
+        anyhow::bail!("Node requires at least 0.001 SOL deposited on node wallet: {}", config.node_pubkey());
     }
 
     Ok(())
