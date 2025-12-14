@@ -2,12 +2,14 @@ use litesvm::{types::TransactionResult, LiteSVM};
 use sol_mind_protocol_client::nft_operations::{
     instructions::{
         CreateMinterConfigBuilder, CreateTradeHubBuilder, DelistAssetBuilder, ListAssetBuilder,
-        MintAssetBuilder, PurchaseAssetBuilder, 
+        MintAssetBuilder, PurchaseAssetBuilder,
     },
     types::AssetsConfig,
 };
 use sol_mind_protocol_client::{
-    dac_manager::instructions::{CreateAgentBuilder, SubmitTaskBuilder},
+    dac_manager::instructions::{
+        ClaimComputeNodeBuilder, CreateAgentBuilder, RegisterComputeNodeBuilder, SubmitTaskBuilder,
+    },
     instructions::{
         CreateProjectBuilder, InitializeProtocolBuilder, TransferProjectFeesBuilder,
         TransferProtocolFeesBuilder, UpdateFeesBuilder, UpdateSingleFeeBuilder,
@@ -376,24 +378,24 @@ impl Instructions {
     pub fn create_agent(
         svm: &mut LiteSVM,
         agent_id: u64,
-        compute_node: Pubkey,
+        public: bool,
+        compute_node_info_pda: Pubkey,
         owner: Pubkey,
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
         let agent_pda = AccountHelper::find_agent_pda(&owner, agent_id).0;
-        let task_request_pda = AccountHelper::find_task_request_pda(&agent_pda).0;
-        let task_result_pda = AccountHelper::find_task_result_pda(&agent_pda).0;
+        let task_data_pda = AccountHelper::find_task_data_pda(&agent_pda).0;
 
         let instruction = CreateAgentBuilder::new()
             .payer(payer)
             .owner(owner)
             .agent(agent_pda)
-            .task_request(task_request_pda)
-            .task_result(task_result_pda)
-            .system_program(SYSTEM_PROGRAM_ID)
             .agent_id(agent_id)
-            .compute_node(compute_node)
+            .public(public)
+            .task_data(task_data_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
+            .compute_node_info(compute_node_info_pda)
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
@@ -401,30 +403,63 @@ impl Instructions {
 
     pub fn submit_task(
         svm: &mut LiteSVM,
-        agent_id: u64,
-        owner: Pubkey,
         task_data: Vec<u8>,
-        target_compute_node: Option<Pubkey>,
-        compute_node_signer: Pubkey,
+        agent_pda: Pubkey,
+        submitter: Pubkey,
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let agent_pda = AccountHelper::find_agent_pda(&owner, agent_id).0;
-        let task_request_pda = AccountHelper::find_task_request_pda(&agent_pda).0;
+        let task_data_pda = AccountHelper::find_task_data_pda(&agent_pda).0;
 
         let mut builder = SubmitTaskBuilder::new();
         builder
             .payer(payer)
-            .compute_node(compute_node_signer)
-            .task_request(task_request_pda)
+            .submitter(submitter)
+            .task_data(task_data_pda)
             .agent(agent_pda)
             .system_program(SYSTEM_PROGRAM_ID)
-            .task_data(task_data);
-
-        if let Some(target) = target_compute_node {
-            builder.compute_node_arg(target);
-        }
+            .data(task_data);
 
         utils::send_transaction(svm, &[builder.instruction()], &payer, signing_keypairs)
+    }
+
+    pub fn register_compute_node(
+        svm: &mut LiteSVM,
+        node_pubkey: Pubkey,
+        owner: Pubkey,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let compute_node_info_pda = AccountHelper::find_compute_node_info_pda(&node_pubkey).0;
+
+        let instruction = RegisterComputeNodeBuilder::new()
+            .payer(payer)
+            .owner(owner)
+            .compute_node_info(compute_node_info_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
+            .node_pubkey(node_pubkey)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn claim_compute_node(
+        svm: &mut LiteSVM,
+        node_pubkey: Pubkey,
+        node_info_cid: String,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let compute_node_info_pda = AccountHelper::find_compute_node_info_pda(&node_pubkey).0;
+
+        let instruction = ClaimComputeNodeBuilder::new()
+            .payer(payer)
+            .compute_node(node_pubkey)
+            .compute_node_info(compute_node_info_pda)
+            .system_program(SYSTEM_PROGRAM_ID)
+            .node_info_cid(node_info_cid)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
     }
 }

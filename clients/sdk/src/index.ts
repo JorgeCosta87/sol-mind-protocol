@@ -48,8 +48,8 @@ const owner = signer.address;
 try {
   // Step 1: Register Compute Node
   console.log('\n=== Step 1: Registering Compute Node ===');
-  const computeNodeAddress = await dacManager.deriveComputeNodeAddress(owner, nodePubkey);
-  let computeNode = await dacManager.getComputeNode(owner, nodePubkey);
+  const computeNodeAddress = await dacManager.deriveComputeNodeAddress(nodePubkey);
+  let computeNode = await dacManager.getComputeNode(nodePubkey);
   
   if (computeNode.exists) {
     console.log('Compute node already registered');
@@ -63,12 +63,11 @@ try {
       payer: signer,
       owner: signer,
       nodePubkey,
-      nodeInfoCid,
     });
     console.log(`Transaction sent: ${signature}`);
     console.log(`Compute Node address: ${registeredAddress}`);
     console.log('Transaction confirmed!');
-    computeNode = await dacManager.getComputeNode(owner, nodePubkey);
+    computeNode = await dacManager.getComputeNode(nodePubkey);
   }
   
   if (!computeNode.exists) {
@@ -88,7 +87,7 @@ try {
     await new Promise<void>((resolve, reject) => {
       // Also poll periodically as a fallback
       const pollInterval = setInterval(async () => {
-        const currentNode = await dacManager.getComputeNode(owner, nodePubkey);
+        const currentNode = await dacManager.getComputeNode(nodePubkey);
         if (currentNode.exists && currentNode.data.status === ComputeNodeStatus.Approved) {
           clearInterval(pollInterval);
           console.log('✅ Compute node approved (detected via polling)');
@@ -140,7 +139,8 @@ try {
   console.log(`Agent Owner: ${agent.data.owner}`);
   console.log(`Agent Compute Node: ${agent.data.computeNode}`);
   console.log(`Agent Public: ${agent.data.public}`);
-  console.log(`Task Data Address: ${agent.data.taskData}`);
+  const taskDataAddress = await dacManager.deriveTaskDataAddress(agentAddress);
+  console.log(`Task Data Address: ${taskDataAddress}`);
   const taskData = await dacManager.getTaskData(agentAddress);
   if (taskData.exists) {
     console.log(`Task Status: ${TaskStatus[taskData.data.status]}`);
@@ -156,16 +156,24 @@ try {
     console.log('Task not ready, cannot submit');
   } else {
     console.log('Submitting task...');
+
+    const agentInfo = await dacManager.getAgent(signer.address, agentId);
+    if (agentInfo.exists) {
+      console.log(`Agent is ${agentInfo.data.public ? 'public' : 'private'}`);
+      if (!agentInfo.data.public) {
+        console.log('Agent is private - only owner can submit tasks');
+      }
+    }
+    
     const taskSignature = await dacManager.submitTask({
       payer: signer,
-      user: signer,
+      submitter: signer,
       agent: agentAddress,
       data: taskDataBytes,
     });
     console.log(`Task submitted! Transaction signature: ${taskSignature}`);
   }
   
-  // Print task info
   const updatedTaskData = await dacManager.getTaskData(agentAddress);
   if (updatedTaskData.exists) {
     console.log('\n--- Task Data Info ---');

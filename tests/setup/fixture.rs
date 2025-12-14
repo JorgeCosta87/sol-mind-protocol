@@ -25,6 +25,7 @@ pub struct TestFixture {
     pub project_authority_2: Keypair,
     pub treasury: Pubkey,
     pub collection: Keypair,
+    pub compute_node: Keypair,
 }
 
 impl TestFixture {
@@ -38,6 +39,7 @@ impl TestFixture {
         let project_authority_2 = Keypair::new();
         let treasury: Pubkey = Keypair::new().pubkey();
         let collection = Keypair::new();
+        let compute_node = Keypair::new();
 
         let program_id_sol_mind = utils::deploy_program_from_keypair(
             &mut svm,
@@ -61,6 +63,9 @@ impl TestFixture {
         svm.airdrop(&project_owner.pubkey(), 10 * LAMPORTS_PER_SOL)
             .expect("Failed to fund project owner");
 
+        svm.airdrop(&compute_node.pubkey(), 10 * LAMPORTS_PER_SOL)
+            .expect("Failed to fund compute node");
+
         Self {
             svm,
             program_id_sol_mind,
@@ -74,6 +79,7 @@ impl TestFixture {
             project_authority_2,
             treasury,
             collection,
+            compute_node,
         }
     }
 
@@ -337,6 +343,59 @@ impl TestFixture {
 
         self
     }
+
+    pub fn with_register_compute_node(mut self) -> Self {
+        Instructions::register_compute_node(
+            &mut self.svm,
+            self.compute_node.pubkey(),
+            self.project_owner.pubkey(),
+            self.payer.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.project_owner.insecure_clone(),
+            ],
+        )
+        .expect("Failed to register compute node");
+
+        self
+    }
+
+    pub fn with_claim_compute_node(mut self, node_info_cid: Option<String>) -> Self {
+        let cid = node_info_cid.unwrap_or_else(|| "QmExample123".to_string());
+
+        Instructions::claim_compute_node(
+            &mut self.svm,
+            self.compute_node.pubkey(),
+            cid,
+            self.payer.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.compute_node.insecure_clone(),
+            ],
+        )
+        .expect("Failed to claim compute node");
+
+        self
+    }
+
+    pub fn with_create_agent(mut self) -> Self {
+        let compute_node_info_pda =
+            AccountHelper::find_compute_node_info_pda(&self.compute_node.pubkey()).0;
+
+        Instructions::create_agent(
+            &mut self.svm,
+            AGENT_ID,
+            true,
+            compute_node_info_pda,
+            self.project_owner.pubkey(),
+            self.payer.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.project_owner.insecure_clone(),
+            ],
+        )
+        .expect("Failed to create agent");
+
+        self
+    }
 }
-
-

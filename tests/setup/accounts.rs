@@ -1,7 +1,7 @@
 use litesvm::LiteSVM;
 use sol_mind_protocol_client::{
     accounts::{ProjectConfig, ProtocolConfig},
-    dac_manager::accounts::{Agent, TaskRequest, TaskResult},
+    dac_manager::accounts::{Agent, ComputeNodeInfo, TaskData},
     nft_operations::accounts::MinterConfig,
     nft_operations::accounts::{Listing, TradeHub},
     DAC_MANAGER_ID, NFT_OPERATIONS_ID, SOL_MIND_PROTOCOL_ID,
@@ -151,26 +151,27 @@ impl AccountHelper {
         Agent::from_bytes(&account.data).expect("Failed to deserialize agent account")
     }
 
-    pub fn find_task_request_pda(agent: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::try_find_program_address(&[b"task_request", agent.as_ref()], &DAC_MANAGER_ID)
+    pub fn find_task_data_pda(agent: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::try_find_program_address(&[b"task_data", agent.as_ref()], &DAC_MANAGER_ID).unwrap()
+    }
+
+    pub fn get_task_data(svm: &LiteSVM, agent: &Pubkey) -> TaskData {
+        let addr = Self::find_task_data_pda(agent).0;
+        let account = svm.get_account(&addr).expect("Task data account not found");
+        TaskData::from_bytes(&account.data).expect("Failed to deserialize task data account")
+    }
+
+    pub fn find_compute_node_info_pda(node_pubkey: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::try_find_program_address(&[b"compute_node", node_pubkey.as_ref()], &DAC_MANAGER_ID)
             .unwrap()
     }
 
-    pub fn get_task_request(svm: &LiteSVM, agent: &Pubkey) -> TaskRequest {
-        let addr = Self::find_task_request_pda(agent).0;
+    pub fn get_compute_node_info(svm: &LiteSVM, node_pubkey: &Pubkey) -> ComputeNodeInfo {
+        let addr = Self::find_compute_node_info_pda(node_pubkey).0;
         let account = svm
             .get_account(&addr)
-            .expect("Task request account not found");
-        TaskRequest::from_bytes(&account.data).expect("Failed to deserialize task request account")
-    }
-
-    pub fn find_task_result_pda(agent: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::try_find_program_address(&[b"task_result", agent.as_ref()], &DAC_MANAGER_ID).unwrap()
-    }
-
-    pub fn get_task_result(svm: &LiteSVM, agent: &Pubkey) -> TaskResult {
-        let addr = Self::find_task_result_pda(agent).0;
-        let account = svm.get_account(&addr).expect("Task result account not found");
-        TaskResult::from_bytes(&account.data).expect("Failed to deserialize task result account")
+            .expect("Compute node info account not found");
+        ComputeNodeInfo::from_bytes(&account.data)
+            .expect("Failed to deserialize compute node info account")
     }
 }

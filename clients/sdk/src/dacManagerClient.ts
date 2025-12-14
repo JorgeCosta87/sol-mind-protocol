@@ -13,10 +13,9 @@ import { getSubmitTaskInstructionAsync } from './generated/dac-manager/instructi
 import { getClaimTaskInstructionAsync } from './generated/dac-manager/instructions/claimTask.js';
 import { getSubmitTaskResultInstructionAsync } from './generated/dac-manager/instructions/submitTaskResult.js';
 import { getRegisterComputeNodeInstructionAsync } from './generated/dac-manager/instructions/registerComputeNode.js';
-import { CLAIM_NODE_DISCRIMINATOR } from './generated/dac-manager/instructions/claimNode.js';
 import { fetchAgent, fetchMaybeAgent } from './generated/dac-manager/accounts/agent.js';
 import { fetchMaybeTaskData } from './generated/dac-manager/accounts/taskData.js';
-import { fetchMaybeComputeNode } from './generated/dac-manager/accounts/computeNode.js';
+import { fetchMaybeComputeNodeInfo } from './generated/dac-manager/accounts/computeNodeInfo.js';
 import { DAC_MANAGER_PROGRAM_ADDRESS } from './generated/dac-manager/programs/dacManager.js';
 
 export class DacManagerClient {
@@ -62,45 +61,43 @@ export class DacManagerClient {
     return await fetchMaybeTaskData(this.client.rpc, taskDataAddress);
   }
 
-  async deriveComputeNodeAddress(owner: Address, nodePubkey: Address): Promise<Address> {
+  async deriveComputeNodeAddress(nodePubkey: Address): Promise<Address> {
     const [computeNodeAddress] = await getProgramDerivedAddress({
       programAddress: this.programAddress,
       seeds: [
         Buffer.from('compute_node'),
-        getAddressEncoder().encode(owner),
         getAddressEncoder().encode(nodePubkey),
       ],
     });
     return computeNodeAddress;
   }
 
-  async getComputeNode(owner: Address, nodePubkey: Address) {
-    const computeNodeAddress = await this.deriveComputeNodeAddress(owner, nodePubkey);
-    return await fetchMaybeComputeNode(this.client.rpc, computeNodeAddress);
+  async getComputeNode(nodePubkey: Address) {
+    const computeNodeAddress = await this.deriveComputeNodeAddress(nodePubkey);
+    return await fetchMaybeComputeNodeInfo(this.client.rpc, computeNodeAddress);
   }
 
   async getComputeNodeByAddress(computeNodeAddress: Address) {
-    return await fetchMaybeComputeNode(this.client.rpc, computeNodeAddress);
+    return await fetchMaybeComputeNodeInfo(this.client.rpc, computeNodeAddress);
   }
 
   async registerComputeNode(params: {
     payer: TransactionSigner;
     owner: TransactionSigner;
     nodePubkey: Address;
-    nodeInfoCid: string;
   }): Promise<{ signature: string; computeNodeAddress: Address }> {
+    const computeNodeAddress = await this.deriveComputeNodeAddress(
+      params.nodePubkey
+    );
+
     const instruction = await getRegisterComputeNodeInstructionAsync({
       payer: params.payer as any,
       owner: params.owner as any,
+      computeNodeInfo: computeNodeAddress,
       nodePubkey: params.nodePubkey,
-      nodeInfoCid: params.nodeInfoCid,
     });
 
     const signature = await sendTransaction(this.client, params.payer, [instruction]);
-    const computeNodeAddress = await this.deriveComputeNodeAddress(
-      params.owner.address,
-      params.nodePubkey
-    );
 
     return { signature, computeNodeAddress };
   }
@@ -114,23 +111,25 @@ export class DacManagerClient {
     public: boolean;
   }): Promise<{ signature: string; agentAddress: Address }> {
     const computeNodeAddress = await this.deriveComputeNodeAddress(
-      params.computeNodeOwner,
       params.computeNodePubkey
     );
-
-    const instruction = await getCreateAgentInstructionAsync({
-      payer: params.payer as any,
-      owner: params.owner as any,
-      agentId: params.agentId,
-      computeNode: computeNodeAddress,
-      public: params.public,
-    });
-
-    const signature = await sendTransaction(this.client, params.payer, [instruction]);
     const agentAddress = await this.deriveAgentAddress(
       params.owner.address,
       params.agentId
     );
+    const taskDataAddress = await this.deriveTaskDataAddress(agentAddress);
+
+    const instruction = await getCreateAgentInstructionAsync({
+      payer: params.payer as any,
+      owner: params.owner as any,
+      agent: agentAddress,
+      agentId: params.agentId,
+      computeNodeInfo: computeNodeAddress,
+      taskData: taskDataAddress,
+      public: params.public,
+    });
+
+    const signature = await sendTransaction(this.client, params.payer, [instruction]);
 
     return { signature, agentAddress };
   }
@@ -148,20 +147,16 @@ export class DacManagerClient {
       encoding: 'base64',
     });
 
-    // Handle the subscription asynchronously
     (async () => {
       try {
-    const subscription = await subscriptionRequest;
-    // @ts-ignore - PendingRpcSubscriptionsRequest structure may vary
-    const stream = await subscription.value();
+        const subscription = await subscriptionRequest;
+        // @ts-ignore - PendingRpcSubscriptionsRequest structure may vary
+        const stream = await subscription.value();
         
         for await (const notification of stream) {
           const logs = notification.value.logs || [];
           for (const log of logs) {
-            // Check if log contains claim node instruction discriminator
-            // The discriminator bytes might appear in the logs
-            const discriminatorHex = Buffer.from(CLAIM_NODE_DISCRIMINATOR).toString('hex');
-            if (log.includes(discriminatorHex) || log.includes('claim_node') || log.includes('ClaimNode')) {
+            if (log.includes('claim_compute_node') || log.includes('ClaimComputeNode')) {
               callback({
                 signature: notification.value.signature,
                 slot: notification.context.slot,
@@ -180,13 +175,23 @@ export class DacManagerClient {
 
   async submitTask(params: {
     payer: TransactionSigner;
-    user: TransactionSigner;
+    submitter: TransactionSigner;
     agent: Address;
     data: Uint8Array;
   }): Promise<string> {
+    const agent = await this.getAgentByAddress(params.agent);
+    
+    if (!agent.data.public) {
+      if (params.submitter.address !== agent.data.owner) {
+        throw new Error(
+          `Agent is not public. Only the owner (${agent.data.owner}) can submit tasks.`
+        );
+      }
+    }
+
     const instruction = await getSubmitTaskInstructionAsync({
       payer: params.payer as any,
-      user: params.user as any,
+      submitter: params.submitter as any,
       agent: params.agent,
       data: params.data,
     });
