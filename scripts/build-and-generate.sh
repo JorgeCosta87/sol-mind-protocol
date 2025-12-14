@@ -12,5 +12,8 @@ npx codama run --all -c codama-sol-mind-protocol.json
 echo "Generating nft-operations clients..."
 npx codama run --all -c codama-nft-operations.json
 
+echo "Generating dac-manager clients..."
+npx codama run --all -c codama-dac-manager.json
+
 echo "Build and client generation completed successfully!"
 
