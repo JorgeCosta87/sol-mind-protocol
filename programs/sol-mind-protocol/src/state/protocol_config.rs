@@ -66,11 +66,7 @@ impl ProtocolConfig {
         }
     }
 
-    pub fn calculate_fee_amount(
-        &self,
-        operation: Operation,
-        base_amount: Option<u64>,
-    ) -> Result<u64> {
+    pub fn calculate_fee_amount(&self, operation: Operation, base_amount: Option<u64>) -> Result<u64> {
         let fee = self.get_fee(operation);
         match fee.fee_type {
             FeeType::Fixed => Ok(fee.amount),
@@ -80,7 +76,7 @@ impl ProtocolConfig {
                     .checked_mul(fee.amount)
                     .ok_or(error!(ProtocolError::FeeCalculationOverflow))?
                     .checked_div(10_000)
-                    .ok_or(error!(ProtocolError::FeeCalculationOverflow)) // this is not an overflow!
+                    .ok_or(error!(ProtocolError::FeeCalculationOverflow)) 
             }
         }
     }

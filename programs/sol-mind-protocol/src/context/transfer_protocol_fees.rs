@@ -48,11 +48,7 @@ impl<'info> ProtocolFeesTransfer<'info> {
         };
 
         let protocol_key = self.protocol_config.key();
-        let seeds = &[
-            b"treasury",
-            protocol_key.as_ref(),
-            &[bumps.treasury],
-        ];
+        let seeds = &[b"treasury", protocol_key.as_ref(), &[bumps.treasury]];
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);

@@ -34,8 +34,6 @@ pub fn cpi_transfer<'info>(
     Ok(())
 }
 
-/// Pay protocol fee using accounts from the context.
-/// This helper accepts the accounts directly to avoid nested struct issues.
 pub fn pay_protocol_fee<'info>(
     fee_payer: &Signer<'info>,
     protocol_config: &Account<'info, ProtocolConfig>,

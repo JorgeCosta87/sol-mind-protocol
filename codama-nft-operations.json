@@ -5,7 +5,23 @@
         "js": {
             "from": "@codama/renderers-js",
             "args": [
-                "clients/js/src/generated/nft-operations"
+                "clients/sdk/src/generated/nft-operations",
+                {
+                    "dependencyMap": {
+                        "solanaAccounts": "gill",
+                        "solanaAddresses": "gill",
+                        "solanaCodecsCore": "gill",
+                        "solanaCodecsDataStructures": "gill",
+                        "solanaCodecsNumbers": "gill",
+                        "solanaCodecsStrings": "gill",
+                        "solanaErrors": "gill",
+                        "solanaInstructions": "gill",
+                        "solanaOptions": "gill",
+                        "solanaPrograms": "gill",
+                        "solanaRpcTypes": "gill",
+                        "solanaSigners": "gill"
+                    }
+                }
             ]
         },
         "rust": {

@@ -1,0 +1,38 @@
+{
+    "idl": "target/idl/dac_manager.json",
+    "before": [],
+    "scripts": {
+        "js": {
+            "from": "@codama/renderers-js",
+            "args": [
+                "clients/sdk/src/generated/dac-manager",
+                {
+                    "dependencyMap": {
+                        "solanaAccounts": "gill",
+                        "solanaAddresses": "gill",
+                        "solanaCodecsCore": "gill",
+                        "solanaCodecsDataStructures": "gill",
+                        "solanaCodecsNumbers": "gill",
+                        "solanaCodecsStrings": "gill",
+                        "solanaErrors": "gill",
+                        "solanaInstructions": "gill",
+                        "solanaOptions": "gill",
+                        "solanaPrograms": "gill",
+                        "solanaRpcTypes": "gill",
+                        "solanaSigners": "gill"
+                    }
+                }
+            ]
+        },
+        "rust": {
+            "from": "@codama/renderers-rust",
+            "args": [
+                "clients/rust/src/generated/dac-manager",
+                {
+                    "crateFolder": "clients/rust",
+                    "formatCode": true
+                }
+            ]
+        }
+    }
+}

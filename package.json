@@ -8,7 +8,8 @@
     "@codama/nodes-from-anchor": "^1.2.9",
     "@codama/renderers-js": "^1.4.3",
     "@codama/renderers-rust": "^1.2.7",
-    "@coral-xyz/anchor": "^0.32.1"
+    "@coral-xyz/anchor": "^0.32.1",
+    "gill": "^0.14.0"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",

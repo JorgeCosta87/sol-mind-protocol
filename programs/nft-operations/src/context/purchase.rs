@@ -85,7 +85,7 @@ pub struct Purchase<'info> {
 impl<'info> Purchase<'info> {
     pub fn purchase_asset(&mut self, max_price: u64) -> Result<()> {
         let asset_price = self.listing.price;
-        
+
         require!(asset_price <= max_price, ErrorCode::MaxPriceExceeded);
 
         let protocol_fee = pay_protocol_fee(

@@ -39,7 +39,7 @@ pub struct CreateTradeHub<'info> {
         seeds::program = sol_mind_protocol::ID,
     )]
     pub project_config: Account<'info, ProjectConfig>,
-    
+
     #[account(
         seeds = [b"sol-mind-protocol"],
         bump = protocol_config.bump,
