@@ -31,22 +31,28 @@ pub struct PurchaseAsset {
 
     pub protocol_config: solana_pubkey::Pubkey,
 
+    pub protocol_treasury: solana_pubkey::Pubkey,
+
     pub system_program: solana_pubkey::Pubkey,
 
     pub mpl_core_program: solana_pubkey::Pubkey,
 }
 
 impl PurchaseAsset {
-    pub fn instruction(&self) -> solana_instruction::Instruction {
-        self.instruction_with_remaining_accounts(&[])
+    pub fn instruction(
+        &self,
+        args: PurchaseAssetInstructionArgs,
+    ) -> solana_instruction::Instruction {
+        self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::arithmetic_side_effects)]
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
+        args: PurchaseAssetInstructionArgs,
         remaining_accounts: &[solana_instruction::AccountMeta],
     ) -> solana_instruction::Instruction {
-        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
         accounts.push(solana_instruction::AccountMeta::new(self.buyer, true));
         accounts.push(solana_instruction::AccountMeta::new(self.owner, false));
         accounts.push(solana_instruction::AccountMeta::new(self.asset, false));
@@ -68,8 +74,12 @@ impl PurchaseAsset {
             self.project_config,
             false,
         ));
-        accounts.push(solana_instruction::AccountMeta::new(
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
             self.protocol_config,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new(
+            self.protocol_treasury,
             false,
         ));
         accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -81,7 +91,9 @@ impl PurchaseAsset {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let data = PurchaseAssetInstructionData::new().try_to_vec().unwrap();
+        let mut data = PurchaseAssetInstructionData::new().try_to_vec().unwrap();
+        let mut args = args.try_to_vec().unwrap();
+        data.append(&mut args);
 
         solana_instruction::Instruction {
             program_id: crate::NFT_OPERATIONS_ID,
@@ -115,6 +127,18 @@ impl Default for PurchaseAssetInstructionData {
     }
 }
 
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct PurchaseAssetInstructionArgs {
+    pub max_price: u64,
+}
+
+impl PurchaseAssetInstructionArgs {
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+        borsh::to_vec(self)
+    }
+}
+
 /// Instruction builder for `PurchaseAsset`.
 ///
 /// ### Accounts:
@@ -127,9 +151,10 @@ impl Default for PurchaseAssetInstructionData {
 ///   5. `[]` trade_hub
 ///   6. `[writable]` treasury
 ///   7. `[]` project_config
-///   8. `[writable]` protocol_config
-///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   10. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
+///   8. `[]` protocol_config
+///   9. `[writable]` protocol_treasury
+///   10. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   11. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
 #[derive(Clone, Debug, Default)]
 pub struct PurchaseAssetBuilder {
     buyer: Option<solana_pubkey::Pubkey>,
@@ -141,8 +166,10 @@ pub struct PurchaseAssetBuilder {
     treasury: Option<solana_pubkey::Pubkey>,
     project_config: Option<solana_pubkey::Pubkey>,
     protocol_config: Option<solana_pubkey::Pubkey>,
+    protocol_treasury: Option<solana_pubkey::Pubkey>,
     system_program: Option<solana_pubkey::Pubkey>,
     mpl_core_program: Option<solana_pubkey::Pubkey>,
+    max_price: Option<u64>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -196,6 +223,11 @@ impl PurchaseAssetBuilder {
         self.protocol_config = Some(protocol_config);
         self
     }
+    #[inline(always)]
+    pub fn protocol_treasury(&mut self, protocol_treasury: solana_pubkey::Pubkey) -> &mut Self {
+        self.protocol_treasury = Some(protocol_treasury);
+        self
+    }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
@@ -206,6 +238,11 @@ impl PurchaseAssetBuilder {
     #[inline(always)]
     pub fn mpl_core_program(&mut self, mpl_core_program: solana_pubkey::Pubkey) -> &mut Self {
         self.mpl_core_program = Some(mpl_core_program);
+        self
+    }
+    #[inline(always)]
+    pub fn max_price(&mut self, max_price: u64) -> &mut Self {
+        self.max_price = Some(max_price);
         self
     }
     /// Add an additional account to the instruction.
@@ -235,6 +272,9 @@ impl PurchaseAssetBuilder {
             treasury: self.treasury.expect("treasury is not set"),
             project_config: self.project_config.expect("project_config is not set"),
             protocol_config: self.protocol_config.expect("protocol_config is not set"),
+            protocol_treasury: self
+                .protocol_treasury
+                .expect("protocol_treasury is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
@@ -242,8 +282,11 @@ impl PurchaseAssetBuilder {
                 "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
             )),
         };
+        let args = PurchaseAssetInstructionArgs {
+            max_price: self.max_price.clone().expect("max_price is not set"),
+        };
 
-        accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
+        accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
@@ -266,6 +309,8 @@ pub struct PurchaseAssetCpiAccounts<'a, 'b> {
     pub project_config: &'b solana_account_info::AccountInfo<'a>,
 
     pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
+
+    pub protocol_treasury: &'b solana_account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_account_info::AccountInfo<'a>,
 
@@ -295,15 +340,20 @@ pub struct PurchaseAssetCpi<'a, 'b> {
 
     pub protocol_config: &'b solana_account_info::AccountInfo<'a>,
 
+    pub protocol_treasury: &'b solana_account_info::AccountInfo<'a>,
+
     pub system_program: &'b solana_account_info::AccountInfo<'a>,
 
     pub mpl_core_program: &'b solana_account_info::AccountInfo<'a>,
+    /// The arguments for the instruction.
+    pub __args: PurchaseAssetInstructionArgs,
 }
 
 impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_account_info::AccountInfo<'a>,
         accounts: PurchaseAssetCpiAccounts<'a, 'b>,
+        args: PurchaseAssetInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
@@ -316,8 +366,10 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
             treasury: accounts.treasury,
             project_config: accounts.project_config,
             protocol_config: accounts.protocol_config,
+            protocol_treasury: accounts.protocol_treasury,
             system_program: accounts.system_program,
             mpl_core_program: accounts.mpl_core_program,
+            __args: args,
         }
     }
     #[inline(always)]
@@ -343,7 +395,7 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
         remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)],
     ) -> solana_program_error::ProgramResult {
-        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(12 + remaining_accounts.len());
         accounts.push(solana_instruction::AccountMeta::new(*self.buyer.key, true));
         accounts.push(solana_instruction::AccountMeta::new(*self.owner.key, false));
         accounts.push(solana_instruction::AccountMeta::new(*self.asset.key, false));
@@ -371,8 +423,12 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
             *self.project_config.key,
             false,
         ));
-        accounts.push(solana_instruction::AccountMeta::new(
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
             *self.protocol_config.key,
+            false,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new(
+            *self.protocol_treasury.key,
             false,
         ));
         accounts.push(solana_instruction::AccountMeta::new_readonly(
@@ -390,14 +446,16 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let data = PurchaseAssetInstructionData::new().try_to_vec().unwrap();
+        let mut data = PurchaseAssetInstructionData::new().try_to_vec().unwrap();
+        let mut args = self.__args.try_to_vec().unwrap();
+        data.append(&mut args);
 
         let instruction = solana_instruction::Instruction {
             program_id: crate::NFT_OPERATIONS_ID,
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(12 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(13 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.buyer.clone());
         account_infos.push(self.owner.clone());
@@ -410,6 +468,7 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
         account_infos.push(self.treasury.clone());
         account_infos.push(self.project_config.clone());
         account_infos.push(self.protocol_config.clone());
+        account_infos.push(self.protocol_treasury.clone());
         account_infos.push(self.system_program.clone());
         account_infos.push(self.mpl_core_program.clone());
         remaining_accounts
@@ -436,9 +495,10 @@ impl<'a, 'b> PurchaseAssetCpi<'a, 'b> {
 ///   5. `[]` trade_hub
 ///   6. `[writable]` treasury
 ///   7. `[]` project_config
-///   8. `[writable]` protocol_config
-///   9. `[]` system_program
-///   10. `[]` mpl_core_program
+///   8. `[]` protocol_config
+///   9. `[writable]` protocol_treasury
+///   10. `[]` system_program
+///   11. `[]` mpl_core_program
 #[derive(Clone, Debug)]
 pub struct PurchaseAssetCpiBuilder<'a, 'b> {
     instruction: Box<PurchaseAssetCpiBuilderInstruction<'a, 'b>>,
@@ -457,8 +517,10 @@ impl<'a, 'b> PurchaseAssetCpiBuilder<'a, 'b> {
             treasury: None,
             project_config: None,
             protocol_config: None,
+            protocol_treasury: None,
             system_program: None,
             mpl_core_program: None,
+            max_price: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -519,6 +581,14 @@ impl<'a, 'b> PurchaseAssetCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn protocol_treasury(
+        &mut self,
+        protocol_treasury: &'b solana_account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.protocol_treasury = Some(protocol_treasury);
+        self
+    }
+    #[inline(always)]
     pub fn system_program(
         &mut self,
         system_program: &'b solana_account_info::AccountInfo<'a>,
@@ -532,6 +602,11 @@ impl<'a, 'b> PurchaseAssetCpiBuilder<'a, 'b> {
         mpl_core_program: &'b solana_account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.mpl_core_program = Some(mpl_core_program);
+        self
+    }
+    #[inline(always)]
+    pub fn max_price(&mut self, max_price: u64) -> &mut Self {
+        self.instruction.max_price = Some(max_price);
         self
     }
     /// Add an additional account to the instruction.
@@ -568,6 +643,13 @@ impl<'a, 'b> PurchaseAssetCpiBuilder<'a, 'b> {
     #[allow(clippy::clone_on_copy)]
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
+        let args = PurchaseAssetInstructionArgs {
+            max_price: self
+                .instruction
+                .max_price
+                .clone()
+                .expect("max_price is not set"),
+        };
         let instruction = PurchaseAssetCpi {
             __program: self.instruction.__program,
 
@@ -595,6 +677,11 @@ impl<'a, 'b> PurchaseAssetCpiBuilder<'a, 'b> {
                 .protocol_config
                 .expect("protocol_config is not set"),
 
+            protocol_treasury: self
+                .instruction
+                .protocol_treasury
+                .expect("protocol_treasury is not set"),
+
             system_program: self
                 .instruction
                 .system_program
@@ -604,6 +691,7 @@ impl<'a, 'b> PurchaseAssetCpiBuilder<'a, 'b> {
                 .instruction
                 .mpl_core_program
                 .expect("mpl_core_program is not set"),
+            __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -624,8 +712,10 @@ struct PurchaseAssetCpiBuilderInstruction<'a, 'b> {
     treasury: Option<&'b solana_account_info::AccountInfo<'a>>,
     project_config: Option<&'b solana_account_info::AccountInfo<'a>>,
     protocol_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    protocol_treasury: Option<&'b solana_account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
     mpl_core_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+    max_price: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

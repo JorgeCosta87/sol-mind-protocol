@@ -1,7 +1,11 @@
 [workspace]
 members = [
     "programs/sol-mind-protocol",
-    "programs/nft-operations"
+    "programs/nft-operations",
+    "programs/dac-manager"
+]
+exclude = [
+    "nodes/compute-node",
 ]
 resolver = "2"
 
@@ -31,16 +35,20 @@ path = "tests/sol-mind-protocol.rs"
 name = "nft-operations"
 path = "tests/nft-operations.rs"
 
+[[test]]
+name = "dac-manager"
+path = "tests/dac-manager.rs"
+
 [dev-dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
-litesvm = "0.8.1"
+litesvm = "0.8.2"
 
 
 litesvm-token = "0.8.1"
 solana-sdk = "3.0.0"
 spl-associated-token-account = "8.0.0"
 spl-token = "9.0.0"
-solana-sdk-ids = "3.1.0"
+solana-sdk-ids = "3.0.0"
 solana-pubkey = "3.0.0"
 solana-program = "2.0.0"
 mpl-core = { version = "0.11.1", features = ["anchor"] }

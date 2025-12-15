@@ -16,6 +16,7 @@ pub struct TestFixture {
     pub svm: LiteSVM,
     pub program_id_sol_mind: Pubkey,
     pub program_id_nft_operations: Pubkey,
+    pub program_id_dac_manager: Pubkey,
     pub payer: Keypair,
     pub admin_1: Keypair,
     pub admin_2: Keypair,
@@ -24,6 +25,7 @@ pub struct TestFixture {
     pub project_authority_2: Keypair,
     pub treasury: Pubkey,
     pub collection: Keypair,
+    pub compute_node: Keypair,
 }
 
 impl TestFixture {
@@ -37,6 +39,7 @@ impl TestFixture {
         let project_authority_2 = Keypair::new();
         let treasury: Pubkey = Keypair::new().pubkey();
         let collection = Keypair::new();
+        let compute_node = Keypair::new();
 
         let program_id_sol_mind = utils::deploy_program_from_keypair(
             &mut svm,
@@ -48,6 +51,11 @@ impl TestFixture {
             NFT_OPERATIONS_KEYPAIR_PATH,
             NFT_OPERATIONS_SO_PATH,
         );
+        let program_id_dac_manager = utils::deploy_program_from_keypair(
+            &mut svm,
+            DAC_MANAGER_KEYPAIR_PATH,
+            DAC_MANAGER_SO_PATH,
+        );
 
         svm.airdrop(&payer.pubkey(), 10 * LAMPORTS_PER_SOL)
             .expect("Failed to fund payer");
@@ -55,10 +63,14 @@ impl TestFixture {
         svm.airdrop(&project_owner.pubkey(), 10 * LAMPORTS_PER_SOL)
             .expect("Failed to fund project owner");
 
+        svm.airdrop(&compute_node.pubkey(), 10 * LAMPORTS_PER_SOL)
+            .expect("Failed to fund compute node");
+
         Self {
             svm,
             program_id_sol_mind,
             program_id_nft_operations,
+            program_id_dac_manager,
             payer,
             admin_1,
             admin_2,
@@ -67,6 +79,7 @@ impl TestFixture {
             project_authority_2,
             treasury,
             collection,
+            compute_node,
         }
     }
 
@@ -323,12 +336,66 @@ impl TestFixture {
             TRADE_HUB_NAME,
             &project_config_pda,
             collection,
+            LISTING_PRICE,
             &[&buyer.insecure_clone()],
         )
         .expect("Failed to list asset");
 
         self
     }
+
+    pub fn with_register_compute_node(mut self) -> Self {
+        Instructions::register_compute_node(
+            &mut self.svm,
+            self.compute_node.pubkey(),
+            self.project_owner.pubkey(),
+            self.payer.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.project_owner.insecure_clone(),
+            ],
+        )
+        .expect("Failed to register compute node");
+
+        self
+    }
+
+    pub fn with_claim_compute_node(mut self, node_info_cid: Option<String>) -> Self {
+        let cid = node_info_cid.unwrap_or_else(|| "QmExample123".to_string());
+
+        Instructions::claim_compute_node(
+            &mut self.svm,
+            self.compute_node.pubkey(),
+            cid,
+            self.payer.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.compute_node.insecure_clone(),
+            ],
+        )
+        .expect("Failed to claim compute node");
+
+        self
+    }
+
+    pub fn with_create_agent(mut self) -> Self {
+        let compute_node_info_pda =
+            AccountHelper::find_compute_node_info_pda(&self.compute_node.pubkey()).0;
+
+        Instructions::create_agent(
+            &mut self.svm,
+            AGENT_ID,
+            true,
+            compute_node_info_pda,
+            self.project_owner.pubkey(),
+            self.payer.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.project_owner.insecure_clone(),
+            ],
+        )
+        .expect("Failed to create agent");
+
+        self
+    }
 }
-
-

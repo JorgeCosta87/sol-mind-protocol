@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Gv5KH4zeijEQUoQJv9E7Uk8pp9GFqrFar4YmG4AZWWg7");
+declare_id!("7GoSe63kVLi3Bt2mkPHUFVbmTcsZvp7QEUHjDB6GvLgV");
 
 pub mod context;
 pub mod errors;
@@ -9,6 +9,7 @@ pub mod state;
 
 pub use context::*;
 pub use errors::*;
+pub use helpers::*;
 pub use state::*;
 
 #[program]
@@ -56,6 +57,6 @@ pub mod sol_mind_protocol {
     }
 
     pub fn transfer_protocol_fees(ctx: Context<ProtocolFeesTransfer>, amount: u64) -> Result<()> {
-        ctx.accounts.transfer_protocol_fees(amount)
+        ctx.accounts.transfer_protocol_fees(amount, &ctx.bumps)
     }
 }

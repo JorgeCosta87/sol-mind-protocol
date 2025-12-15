@@ -80,7 +80,7 @@ impl ProtocolConfig {
                     .checked_mul(fee.amount)
                     .ok_or(error!(ProtocolError::FeeCalculationOverflow))?
                     .checked_div(10_000)
-                    .ok_or(error!(ProtocolError::FeeCalculationOverflow)) // this is not an overflow!
+                    .ok_or(error!(ProtocolError::FeeCalculationOverflow))
             }
         }
     }

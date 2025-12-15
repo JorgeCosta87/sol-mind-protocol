@@ -3,12 +3,15 @@ pub const SOL_MIND_PROTOCOL_KEYPAIR_PATH: &str = "target/deploy/sol_mind_protoco
 pub const SOL_MIND_PROTOCOL_SO_PATH: &str = "target/deploy/sol_mind_protocol.so";
 pub const NFT_OPERATIONS_KEYPAIR_PATH: &str = "target/deploy/nft_operations-keypair.json";
 pub const NFT_OPERATIONS_SO_PATH: &str = "target/deploy/nft_operations.so";
+pub const DAC_MANAGER_KEYPAIR_PATH: &str = "target/deploy/dac_manager-keypair.json";
+pub const DAC_MANAGER_SO_PATH: &str = "target/deploy/dac_manager.so";
 
 pub const MPL_CORE_PROGRAM_ID: &str = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d";
 pub const MPL_CORE_PROGRAM_SO_PATH: &str = "tests/programs/mpl_core.so";
 
 // Test data constants
 pub const PROJECT_1_ID: u64 = 1u64;
+pub const AGENT_ID: u64 = 1u64;
 pub const DEFAULT_PROJECT_NAME: &str = "Test project";
 pub const DEFAULT_PROJECT_DESCRIPTION: &str = "Project description";
 

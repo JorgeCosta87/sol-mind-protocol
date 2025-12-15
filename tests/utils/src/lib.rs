@@ -5,7 +5,11 @@ use litesvm::{
     LiteSVM,
 };
 use solana_sdk::{
-    clock::Clock, instruction::Instruction, pubkey::Pubkey, signature::{Keypair, Signer, read_keypair_file}, transaction::Transaction
+    clock::Clock,
+    instruction::Instruction,
+    pubkey::Pubkey,
+    signature::{read_keypair_file, Keypair, Signer},
+    transaction::Transaction,
 };
 
 pub use mpl::MplUtils;
@@ -13,6 +17,7 @@ pub use mpl::MplUtils;
 pub fn deploy_program_from_keypair(svm: &mut LiteSVM, keypair_path: &str, so_path: &str) -> Pubkey {
     let program_keypair = read_keypair_file(keypair_path).expect("Failed to read keypair file");
     let program_id = program_keypair.pubkey();
+    println!("Deploying program from keypair: {}", program_id);
 
     deploy_program_internal(svm, program_id, so_path)
 }
@@ -51,14 +56,10 @@ pub fn send_transaction(
     signing_keypairs: &[&Keypair],
 ) -> TransactionResult {
     let blockhash = svm.latest_blockhash();
-    let tx = Transaction::new_signed_with_payer(
-        instructions,
-        Some(payer),
-        signing_keypairs,
-        blockhash,
-    );
+    let tx =
+        Transaction::new_signed_with_payer(instructions, Some(payer), signing_keypairs, blockhash);
     let result = svm.send_transaction(tx);
-    
+
     svm.expire_blockhash();
     let clock: Clock = svm.get_sysvar();
     svm.warp_to_slot(clock.slot + 100);

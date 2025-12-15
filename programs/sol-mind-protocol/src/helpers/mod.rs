@@ -37,20 +37,21 @@ pub fn cpi_transfer<'info>(
 pub fn pay_protocol_fee<'info>(
     fee_payer: &Signer<'info>,
     protocol_config: &Account<'info, ProtocolConfig>,
+    protocol_treasury: &AccountInfo<'info>,
     system_program: &Program<'info, System>,
     operation: Operation,
     base_amount: Option<u64>,
-) -> Result<()> {
+) -> Result<u64> {
     let fee_amount = protocol_config.calculate_fee_amount(operation, base_amount)?;
 
     if fee_amount > 0 {
         cpi_transfer(
             fee_payer.to_account_info(),
-            protocol_config.to_account_info(),
+            protocol_treasury.to_account_info(),
             fee_amount,
             system_program,
         )?;
     }
 
-    Ok(())
+    Ok(fee_amount)
 }

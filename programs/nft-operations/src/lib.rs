@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("3svA9B2F5uUkVMzaf8KCXiRJYf1n9aQFCzp2SQszdiVU");
+declare_id!("Anv3tR3s1eQqQE1a5wnhtYdi6dkjv9rTn34V6pom9C9q");
 
 pub mod context;
 pub mod errors;
@@ -63,7 +63,7 @@ pub mod nft_operations {
         ctx.accounts.delist_asset()
     }
 
-    pub fn purchase_asset(ctx: Context<Purchase>) -> Result<()> {
-        ctx.accounts.purchase_asset()
+    pub fn purchase_asset(ctx: Context<Purchase>, max_price: u64) -> Result<()> {
+        ctx.accounts.purchase_asset(max_price)
     }
 }

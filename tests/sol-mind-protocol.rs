@@ -55,7 +55,12 @@ fn test_create_project() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
-    let protocol_initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+    let (protocol_treasury_pda, _) = AccountHelper::find_treasury_pda(&protocol_config_pda);
+    let protocol_treasury_initial_balance = fixture
+        .svm
+        .get_account(&protocol_treasury_pda)
+        .map(|acc| acc.lamports)
+        .unwrap_or(0);
 
     let project_name = "Test project".to_string();
     let project_description = "Project description".to_string();
@@ -93,7 +98,8 @@ fn test_create_project() {
                 AccountHelper::find_project_pda(&fixture.project_owner.pubkey(), PROJECT_1_ID).0;
             let treasury_bump = AccountHelper::find_treasury_pda(&project_config_pda).1;
 
-            let protocol_final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let protocol_treasury_final_balance =
+                utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
             assert_eq!(project_config.protocol_config, protocol_config_pda);
             assert_eq!(project_config.owner, fixture.project_owner.pubkey());
@@ -104,8 +110,8 @@ fn test_create_project() {
             assert_eq!(project_config.project_id, PROJECT_1_ID);
 
             assert_eq!(
-                protocol_final_balance,
-                protocol_initial_balance + protocol_config.fees.create_project.amount
+                protocol_treasury_final_balance,
+                protocol_treasury_initial_balance + protocol_config.fees.create_project.amount
             )
         }
         Err(e) => {
@@ -241,12 +247,14 @@ fn test_protocol_fees_transfer() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
+    let (protocol_treasury_pda, _) = AccountHelper::find_treasury_pda(&protocol_config_pda);
+
     fixture
         .svm
-        .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
-        .expect("Failed to fund protocol config");
+        .airdrop(&protocol_treasury_pda, 5 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund protocol treasury");
 
-    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
     let transfer_amount = 1 * LAMPORTS_PER_SOL;
     let destination = fixture.admin_2.pubkey();
@@ -267,7 +275,7 @@ fn test_protocol_fees_transfer() {
         Ok(result) => {
             utils::print_transaction_logs(&result);
 
-            let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let final_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
             let destination_final_balance = utils::get_lamports(&fixture.svm, &destination);
 
             assert_eq!(final_balance, initial_balance - transfer_amount);
@@ -284,12 +292,14 @@ fn test_protocol_fees_transfer_non_admin() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
+    let (protocol_treasury_pda, _) = AccountHelper::find_treasury_pda(&protocol_config_pda);
+
     fixture
         .svm
-        .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
-        .expect("Failed to fund protocol config");
+        .airdrop(&protocol_treasury_pda, 5 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund protocol treasury");
 
-    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
     let transfer_amount = 1 * LAMPORTS_PER_SOL;
     let destination = fixture.admin_2.pubkey();
@@ -316,7 +326,7 @@ fn test_protocol_fees_transfer_non_admin() {
                 e
             );
 
-            let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let final_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
             assert_eq!(
                 final_balance, initial_balance,
                 "Balance should not change on failed transfer"
@@ -330,12 +340,14 @@ fn test_protocol_fees_transfer_to_non_whitelisted_address() {
     let mut fixture = TestFixture::new().with_initialize_protocol();
 
     let protocol_config_pda = AccountHelper::find_protocol_config_pda().0;
+    let (protocol_treasury_pda, _) = AccountHelper::find_treasury_pda(&protocol_config_pda);
+
     fixture
         .svm
-        .airdrop(&protocol_config_pda, 5 * LAMPORTS_PER_SOL)
-        .expect("Failed to fund protocol config");
+        .airdrop(&protocol_treasury_pda, 5 * LAMPORTS_PER_SOL)
+        .expect("Failed to fund protocol treasury");
 
-    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+    let initial_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
 
     let transfer_amount = 1 * LAMPORTS_PER_SOL;
     let destination = Keypair::new().pubkey();
@@ -364,7 +376,7 @@ fn test_protocol_fees_transfer_to_non_whitelisted_address() {
                 e
             );
 
-            let final_balance = utils::get_lamports(&fixture.svm, &protocol_config_pda);
+            let final_balance = utils::get_lamports(&fixture.svm, &protocol_treasury_pda);
             assert_eq!(
                 final_balance, initial_balance,
                 "Balance should not change on failed transfer"

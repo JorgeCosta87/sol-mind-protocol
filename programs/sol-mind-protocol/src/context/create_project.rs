@@ -16,8 +16,8 @@ pub struct CreateProject<'info> {
         seeds = [
             b"project",
             owner.key.as_ref(),
-            project_id.to_le_bytes().as_ref(),
             protocol_config.key().as_ref(),
+            project_id.to_le_bytes().as_ref(),
         ],
         bump,
     )]
@@ -28,12 +28,20 @@ pub struct CreateProject<'info> {
         bump,
     )]
     pub treasury: SystemAccount<'info>,
+
     #[account(
-        mut,
         seeds = [b"sol-mind-protocol"],
         bump = protocol_config.bump,
     )]
     pub protocol_config: Account<'info, ProtocolConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"treasury", protocol_config.key().as_ref()],
+        bump,
+    )]
+    pub protocol_treasury: SystemAccount<'info>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -49,6 +57,7 @@ impl<'info> CreateProject<'info> {
         pay_protocol_fee(
             &self.owner,
             &self.protocol_config,
+            &self.protocol_treasury.to_account_info(),
             &self.system_program,
             Operation::CreateProject,
             None,

@@ -22,4 +22,8 @@ pub enum ErrorCode {
     NotAssetOwner,
     #[msg("Fee calculation overflow")]
     FeeCalculationOverflow,
+    #[msg("The price exceeded the maximum price allowed")]
+    MaxPriceExceeded,
+    #[msg("Math operation overflow")]
+    MathOverflow,
 }

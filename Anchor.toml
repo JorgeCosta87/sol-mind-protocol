@@ -6,8 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-sol_mind_protocol = "EkK8DLYGgXKi1Hcp5xpoyrkgMqxE6MqyhQh35QFACJ24"
-nft_operations = "DBewUr459F8GAJJJqvN29rYbRPKDQSrx72Sh9wSjDwoJ"
+sol_mind_protocol = "7GoSe63kVLi3Bt2mkPHUFVbmTcsZvp7QEUHjDB6GvLgV"
+nft_operations = "Anv3tR3s1eQqQE1a5wnhtYdi6dkjv9rTn34V6pom9C9q"
+dac-manager = "DeXj8mQDYUnLC2mX5xiRqgvYt193sBhJWRZTBkRLg79M"
+
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,9 +19,10 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "cargo test"
-test-verbose = "cargo test -- --show-output"
-test-sol-mind-protocol = "anchor test --program-name sol_mind_protocol"
-test-nft-operations = "anchor test --program-name nft_operations"
 build = "bash scripts/build-and-generate.sh"
 generate = "bash scripts/generate-clients.sh"
+test = "cargo test"
+test-verbose = "cargo test -- --show-output"
+test-nft-operations = "anchor test --program-name nft_operations"
+test-sol-mind-protocol = "anchor test --program-name sol_mind_protocol"
+
