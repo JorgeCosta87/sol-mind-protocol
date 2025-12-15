@@ -3,10 +3,14 @@ mod config;
 mod adapters;
 mod services;
 
+use std::sync::Arc;
+
 use anyhow::Result;
 use config::Config;
 use adapters::SolanaAdapter;
 use services::NodeRegistryService;
+
+use crate::services::AgentService;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -24,15 +28,18 @@ async fn main() -> Result<()> {
 
     startup_checks(&config, &solana_adapter).await?;
 
-    let node_registry_service = NodeRegistryService::new(solana_adapter);
+    let node_registry_service = NodeRegistryService::new(Arc::clone(&solana_adapter));
     node_registry_service.check_and_claim_pending_node(&config.node_pubkey()).await?;
     
+    let mut agent_service = AgentService::new(solana_adapter);
+    agent_service.monitor_and_register_agents(&config.node_pubkey()).await?;
+
+
     tokio::signal::ctrl_c().await?;
     println!("Shutting down...");
 
     Ok(())
 }
-
 
 async fn startup_checks(config: &Config, solana_adapter: &SolanaAdapter) -> Result<()> {
     let balance = solana_adapter.get_balance(&config.node_pubkey()).await?;

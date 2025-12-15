@@ -11,10 +11,9 @@ use solana_sdk::{
     instruction::Instruction, pubkey::Pubkey, signature::Keypair, signer::Signer, transaction::Transaction
 };
 use sol_mind_protocol_client::dac_manager::{
-    accounts::{fetch_maybe_compute_node_info, ComputeNodeInfo, COMPUTE_NODE_INFO_DISCRIMINATOR},
-    instructions::ClaimComputeNodeBuilder,
-    programs::DAC_MANAGER_ID,
-    types::ComputeNodeStatus,
+    accounts::{
+        AGENT_DISCRIMINATOR, Agent, COMPUTE_NODE_INFO_DISCRIMINATOR, ComputeNodeInfo, fetch_all_maybe_agent, fetch_maybe_compute_node_info
+    }, instructions::{ClaimComputeNodeBuilder}, programs::DAC_MANAGER_ID, types::ComputeNodeStatus
 };
 use tokio::sync::mpsc;
 use std::sync::Arc;
@@ -71,6 +70,83 @@ impl SolanaAdapter {
         )
         .ok_or_else(|| anyhow::anyhow!("Failed to derive compute node address"))?;
         Ok(address)
+    }
+
+    pub fn derive_agent_pda(
+        &self,
+        owner: &Pubkey,
+        agent_id: u64,
+    ) -> Result<Pubkey> {
+        let (address, _) = Pubkey::try_find_program_address(
+            &[
+                b"agent",
+                owner.as_ref(),
+                &agent_id.to_le_bytes(),
+            ],
+            &DAC_MANAGER_ID,
+        )
+        .ok_or_else(|| anyhow::anyhow!("Failed to derive agent address"))?;
+        Ok(address)
+    }
+
+    pub async fn get_agents_accounts(
+        &self,
+        node_pubkey: &Pubkey,
+    ) -> Result<Option<Vec<(Pubkey, Agent)>>> {
+        let mut agents = Vec::new();
+        let filters = vec![
+            RpcFilterType::Memcmp(Memcmp::new(
+                0,
+                MemcmpEncodedBytes::Bytes(AGENT_DISCRIMINATOR.to_vec()),
+            )),
+            RpcFilterType::Memcmp(Memcmp::new(
+                8 + 8 + 32,
+                MemcmpEncodedBytes::Bytes(node_pubkey.as_ref().to_vec()),
+            )),
+        ];
+
+        let config = RpcProgramAccountsConfig {
+            filters: Some(filters),
+            account_config: RpcAccountInfoConfig {
+                commitment: Some(CommitmentConfig::confirmed()),
+                encoding: Some(UiAccountEncoding::Base64),
+                data_slice: None,
+                min_context_slot: None,
+            },
+            with_context: None,
+            sort_results: None,
+        };
+
+        let accounts = self.client.get_program_ui_accounts_with_config(
+            &DAC_MANAGER_ID, config
+
+        ).map_err(|e| anyhow::anyhow!("Failed to get agents accounts: {}", e))?;
+
+        for account in accounts {
+            let agent = Agent::from_bytes(&account.1.data.decode().unwrap())?; // TODO: handle error
+            let agent_address = account.0;
+            agents.push((agent_address, agent));
+        }
+        Ok(Some(agents))
+    }
+
+    pub async fn get_agents_accounts_by_address(
+        &self,
+        address: Pubkey,
+    ) -> Result<Option<Vec<Agent>>> {
+        let mut agents = Vec::new();
+        let maybe_accounts = fetch_all_maybe_agent(&self.client, &[address])?;
+
+        for maybe_account in maybe_accounts {
+            match maybe_account {
+                sol_mind_protocol_client::shared::MaybeAccount::Exists(account) => {
+                    agents.push(account.data.clone());
+                }
+                _ => continue,
+            }
+        }
+
+        Ok(Some(agents))
     }
 
     pub async fn get_compute_node_info_account(
@@ -193,6 +269,68 @@ impl SolanaAdapter {
                         if let Ok(compute_node) = ComputeNodeInfo::from_bytes(&decoded_bytes) {
                             if tx.send(compute_node).await.is_err() {
                                 println!("Receiver dropped, stopping watch");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    pub fn watch_agent_accounts(
+        &self,
+        compute_node_pubkey: &Pubkey,
+        tx: mpsc::Sender<Agent>,
+    ) -> tokio::task::JoinHandle<()> {
+        let ws_client = Arc::clone(&self.ws_client);
+        let compute_node_pubkey = *compute_node_pubkey;
+
+        let filters = vec![
+            RpcFilterType::Memcmp(Memcmp::new(
+                0,
+                MemcmpEncodedBytes::Bytes(AGENT_DISCRIMINATOR.to_vec()),
+            )),
+            RpcFilterType::Memcmp(Memcmp::new(
+                8 + 8 + 32,
+                MemcmpEncodedBytes::Bytes(compute_node_pubkey.as_ref().to_vec()),
+            )),
+        ];
+
+        let config = RpcProgramAccountsConfig {
+            filters: Some(filters),
+            account_config: RpcAccountInfoConfig {
+                commitment: Some(CommitmentConfig::confirmed()),
+                encoding: Some(UiAccountEncoding::Base64),
+                data_slice: None,
+                min_context_slot: None,
+            },
+            with_context: None,
+            sort_results: None,
+        };
+
+        tokio::spawn(async move {
+            let (mut stream, _) = match ws_client
+                .program_subscribe(&DAC_MANAGER_ID, Some(config))
+                .await
+            {
+                Ok(sub) => sub,
+                Err(e) => {
+                    panic!("Failed to subscribe to agent accounts: {}", e);
+                }
+            };
+
+            while let Some(account) = stream.next().await {
+                if let solana_account_decoder::UiAccountData::Binary(data_str, _) =
+                    &account.value.account.data
+                {
+                    if let Ok(decoded_bytes) =
+                        base64::engine::general_purpose::STANDARD.decode(data_str)
+                    {
+                        if let Ok(agent) = Agent::from_bytes(&decoded_bytes) {
+                            if tx.send(agent).await.is_err() {
+                                println!("Receiver dropped, stopping agent watch");
+                                break;
                             }
                         }
                     }
@@ -201,7 +339,6 @@ impl SolanaAdapter {
         })
     }
 }
-
 
 pub trait ComputeNodeInfoExt {
     fn is_pending(&self) -> bool;
