@@ -1,6 +1,6 @@
 mod setup;
 
-use sol_mind_protocol_client::dac_manager::types::{ComputeNodeStatus, TaskStatus};
+use sol_mind_protocol_client::dac_manager::types::{AgentStatus, ComputeNodeStatus, TaskStatus};
 use solana_sdk::signature::Signer;
 
 use crate::setup::test_data::*;
@@ -165,6 +165,45 @@ fn test_submit_task() {
             );
             assert_eq!(task_data_account.status, TaskStatus::Pending);
             assert_eq!(task_data_account.result, Vec::<u8>::new());
+        }
+        Err(e) => {
+            panic!("Transaction failed: {:?}", e);
+        }
+    }
+}
+
+#[test]
+fn test_activate_agent() {
+    let mut fixture = TestFixture::new()
+        .with_register_compute_node()
+        .with_claim_compute_node(None)
+        .with_create_agent();
+
+    let agent_before = AccountHelper::get_agent(&fixture.svm, &fixture.project_owner.pubkey(), AGENT_ID);
+
+    assert_eq!(agent_before.status, AgentStatus::Pending);
+
+    let result = Instructions::activate_agent(
+        &mut fixture.svm,
+        AGENT_ID,
+        fixture.project_owner.pubkey(),
+        fixture.compute_node.pubkey(),
+        fixture.payer.pubkey(),
+        &[
+            &fixture.payer.insecure_clone(),
+            &fixture.compute_node.insecure_clone(),
+        ],
+    );
+
+    match result {
+        Ok(result) => {
+            utils::print_transaction_logs(&result);
+            let agent_after = AccountHelper::get_agent(&fixture.svm, &fixture.project_owner.pubkey(), AGENT_ID);
+
+            assert_eq!(agent_after.owner, fixture.project_owner.pubkey());
+            assert_eq!(agent_after.agent_id, AGENT_ID);
+            assert_eq!(agent_after.compute_node, fixture.compute_node.pubkey());
+            assert_eq!(agent_after.status, AgentStatus::Active);
         }
         Err(e) => {
             panic!("Transaction failed: {:?}", e);

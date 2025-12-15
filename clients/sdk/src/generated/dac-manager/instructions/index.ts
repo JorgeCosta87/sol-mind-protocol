@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './activateAgent';
 export * from './claimComputeNode';
 export * from './claimTask';
 export * from './createAgent';

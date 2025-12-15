@@ -398,4 +398,21 @@ impl TestFixture {
 
         self
     }
+
+    pub fn with_activated_agent(mut self) -> Self {
+        Instructions::activate_agent(
+            &mut self.svm,
+            AGENT_ID,
+            self.project_owner.pubkey(),
+            self.compute_node.pubkey(),
+            self.payer.pubkey(),
+            &[
+                &self.payer.insecure_clone(),
+                &self.compute_node.insecure_clone(),
+            ],
+        )
+        .expect("Failed to activate agent");
+
+        self
+    }
 }

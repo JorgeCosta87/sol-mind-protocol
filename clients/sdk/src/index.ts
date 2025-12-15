@@ -1,21 +1,16 @@
-// Load environment variables from .env file
 import 'dotenv/config'
-import prompts from 'prompts'
 
-// Solana Client SDK
 import { Address, createSolanaClient, getMonikerFromGenesisHash, isAddress, lamportsToSol } from 'gill'
-// Solana Client SDK (Node.js)
 import { loadKeypairSignerFromFile } from 'gill/node'
 
 import { DacManagerClient } from './dacManagerClient.js'
 import { TaskStatus, ComputeNodeStatus } from './generated/dac-manager/index.js'
 
-// Get the Solana RPC endpoint from the environment variable or default to devnet
 const urlOrMoniker = process.env.SOLANA_RPC_ENDPOINT || 'devnet'
 const client = createSolanaClient({ urlOrMoniker })
 
 console.log(urlOrMoniker)
-// Load the keypair from the .env file or use the default (~/.config/solana/id.json)
+
 const signer = await loadKeypairSignerFromFile(process.env.SOLANA_SIGNER_PATH)
 
 // Get the balance of the provided address and print it to the console
@@ -25,24 +20,20 @@ async function showBalance(address: Address) {
   console.log(`Balance : ${lamportsToSol(balance.value)} SOL`)
 }
 
-// Welcome message
 console.log('Gm! Say hi to your new Solana script!')
 
-// Show the endpoint and cluster
 console.log(`Endpoint: ${urlOrMoniker.split('?')[0]}`)
 const cluster = getMonikerFromGenesisHash(await client.rpc.getGenesisHash().send())
 console.log(`Cluster : ${cluster}`)
 
-// Show the signer's address and balance
 console.log('Signer Keypair')
 await showBalance(signer.address)
 
-// Initialize DAC Manager Client
 const dacManager = new DacManagerClient(client);
 
 // Compute node configuration
 const nodePubkey = '6DgNU6x3TF8TL4VWYcA4SP36pvszjj71MSwaoD52LnHQ' as Address;
-const nodeInfoCid = 'QmExample123'; // Replace with actual CID
+const nodeInfoCid = 'QmExample123';
 const owner = signer.address;
 
 try {
@@ -85,7 +76,6 @@ try {
     console.log(`Monitoring compute node: ${computeNodeAddress}`);
     
     await new Promise<void>((resolve, reject) => {
-      // Also poll periodically as a fallback
       const pollInterval = setInterval(async () => {
         const currentNode = await dacManager.getComputeNode(nodePubkey);
         if (currentNode.exists && currentNode.data.status === ComputeNodeStatus.Approved) {
@@ -95,7 +85,6 @@ try {
         }
       }, 5000);
       
-      // Timeout after 5 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
         reject(new Error('Timeout waiting for compute node to claim'));
@@ -132,7 +121,6 @@ try {
     throw new Error('Failed to create or fetch agent');
   }
   
-  // Print agent info
   console.log('\n--- Agent Info ---');
   console.log(`Agent Address: ${agentAddress}`);
   console.log(`Agent ID: ${agent.data.agentId}`);
@@ -217,7 +205,7 @@ try {
     const currentStatus = taskDataForResult.data.status;
     console.log(`Current task status: ${TaskStatus[currentStatus]}`);
     
-    if (currentStatus === TaskStatus.Processing) { // Processing = 2
+    if (currentStatus === TaskStatus.Processing) {
         console.log('Submitting task result...');
         try {
           const resultSignature = await dacManager.submitTaskResult({
@@ -241,7 +229,6 @@ try {
       console.log(`Task status must be "Processing" to submit result`);
     }
   
-  // Print final result info
   const finalTaskData = await dacManager.getTaskData(agentAddress);
   if (finalTaskData.exists) {
     console.log('\n--- Final Task Data Info ---');

@@ -1,5 +1,12 @@
 use anchor_lang::prelude::*;
 
+#[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq)]
+pub enum AgentStatus {
+    Pending,
+    Active,
+    Inactive,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct Agent {
@@ -7,5 +14,6 @@ pub struct Agent {
     pub owner: Pubkey,
     pub compute_node: Pubkey,
     pub public: bool,
+    pub status: AgentStatus,
     pub bump: u8,
 }

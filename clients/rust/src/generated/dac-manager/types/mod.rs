@@ -5,8 +5,10 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+pub(crate) mod r#agent_status;
 pub(crate) mod r#compute_node_status;
 pub(crate) mod r#task_status;
 
+pub use self::r#agent_status::*;
 pub use self::r#compute_node_status::*;
 pub use self::r#task_status::*;

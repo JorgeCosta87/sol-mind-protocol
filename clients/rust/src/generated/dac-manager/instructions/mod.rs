@@ -5,6 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+pub(crate) mod r#activate_agent;
 pub(crate) mod r#claim_compute_node;
 pub(crate) mod r#claim_task;
 pub(crate) mod r#create_agent;
@@ -12,6 +13,7 @@ pub(crate) mod r#register_compute_node;
 pub(crate) mod r#submit_task;
 pub(crate) mod r#submit_task_result;
 
+pub use self::r#activate_agent::*;
 pub use self::r#claim_compute_node::*;
 pub use self::r#claim_task::*;
 pub use self::r#create_agent::*;

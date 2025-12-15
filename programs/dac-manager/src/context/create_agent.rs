@@ -1,9 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    errors::ErrorCode,
-    state::{Agent, ComputeNodeInfo, ComputeNodeStatus, TaskStatus},
-    TaskData,
+    AgentStatus, TaskData, errors::ErrorCode, state::{Agent, ComputeNodeInfo, ComputeNodeStatus, TaskStatus}
 };
 
 #[derive(Accounts)]
@@ -54,6 +52,7 @@ impl<'info> CreateAgent<'info> {
             owner: self.owner.key(),
             compute_node: self.compute_node_info.node_pubkey,
             public,
+            status: AgentStatus::Pending,
             bump: bumps.agent,
         });
 

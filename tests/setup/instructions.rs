@@ -8,7 +8,7 @@ use sol_mind_protocol_client::nft_operations::{
 };
 use sol_mind_protocol_client::{
     dac_manager::instructions::{
-        ClaimComputeNodeBuilder, CreateAgentBuilder, RegisterComputeNodeBuilder, SubmitTaskBuilder,
+        ActivateAgentBuilder, ClaimComputeNodeBuilder, CreateAgentBuilder, RegisterComputeNodeBuilder, SubmitTaskBuilder,
     },
     instructions::{
         CreateProjectBuilder, InitializeProtocolBuilder, TransferProjectFeesBuilder,
@@ -458,6 +458,26 @@ impl Instructions {
             .compute_node_info(compute_node_info_pda)
             .system_program(SYSTEM_PROGRAM_ID)
             .node_info_cid(node_info_cid)
+            .instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn activate_agent(
+        svm: &mut LiteSVM,
+        agent_id: u64,
+        owner: Pubkey,
+        compute_node: Pubkey,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let agent_pda = AccountHelper::find_agent_pda(&owner, agent_id).0;
+
+        let instruction = ActivateAgentBuilder::new()
+            .payer(payer)
+            .compute_node(compute_node)
+            .agent(agent_pda)
+            .agent_id(agent_id)
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
