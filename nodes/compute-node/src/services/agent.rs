@@ -2,7 +2,7 @@ use anyhow::Result;
 use tokio::sync::{Mutex, mpsc};
 use crate::adapters::SolanaAdapter;
 use solana_sdk::pubkey::Pubkey;
-use sol_mind_protocol_client::dac_manager::accounts::Agent;
+use sol_mind_protocol_client::dac_manager::{accounts::Agent, types::AgentStatus};
 use std::{collections::HashMap, sync::Arc};
 
 pub struct AgentService {
@@ -24,8 +24,19 @@ impl AgentService {
         println!("Checking and registering pending agents for node: {:?}", node_pubkey);
         if let Some(agents) = self.adapter.get_agents_accounts(node_pubkey).await? {
             for agent in agents {
-                println!("Agent Account Added: {:#?}", agent);
-                self.add_agent_by_address(&agent.0, agent.1).await?;
+                if agent.1.status == AgentStatus::Pending {
+                    println!("Activating pending agent: {:?}", agent.0);
+                    if let Err(e) = self.adapter.activate_agent(&agent.1).await {
+                        eprintln!("Failed to activate agent {:?}: {}", agent.0, e);
+                    } else {
+                        self.add_agent_by_address(&agent.0, agent.1.clone()).await?;
+                        println!("Successfully activated agent and added to registry: {:?}", agent.0);
+                    }
+                }
+                else if agent.1.status == AgentStatus::Active { //TODO: this also will be tracked on ifps!
+                    self.add_agent_by_address(&agent.0, agent.1.clone()).await?;
+                    println!("Successfully added agent to registry: {:?}", agent.0);
+                }
             }
             return Ok(());
         }
@@ -86,9 +97,17 @@ impl AgentService {
                     result = rx.recv() => {
                         match result {
                             Some(agent) => {
-                                println!("Agent account: {:?}", agent);
-                                let agent_address = adapter.derive_agent_pda(&agent.owner, agent.agent_id).unwrap();
-                                agents_registry.lock().await.insert(agent_address, agent);
+                                println!("Agent account detected: {:?}", agent);
+                                let agent_address = adapter.derive_agent_pda(&agent.owner, agent.agent_id).unwrap(); //TODO: pass the agent and the address
+                                if agent.status == AgentStatus::Pending {
+                                    println!("Activating pending agent: {:?}", agent_address);
+                                    if let Err(e) = adapter.activate_agent(&agent).await {
+                                        eprintln!("Failed to activate agent {:?}: {}", agent_address, e);
+                                    } else {
+                                        agents_registry.lock().await.insert(agent_address, agent);
+                                        println!("Successfully activated agent: {:?}", agent_address);
+                                    }
+                                }
                             }
                             None => {
                                 println!("Watch channel closed");

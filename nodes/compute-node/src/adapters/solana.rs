@@ -13,7 +13,7 @@ use solana_sdk::{
 use sol_mind_protocol_client::dac_manager::{
     accounts::{
         AGENT_DISCRIMINATOR, Agent, COMPUTE_NODE_INFO_DISCRIMINATOR, ComputeNodeInfo, fetch_all_maybe_agent, fetch_maybe_compute_node_info
-    }, instructions::{ClaimComputeNodeBuilder}, programs::DAC_MANAGER_ID, types::ComputeNodeStatus
+    }, instructions::{ActivateAgentBuilder, ClaimComputeNodeBuilder}, programs::DAC_MANAGER_ID, types::ComputeNodeStatus
 };
 use tokio::sync::mpsc;
 use std::sync::Arc;
@@ -180,6 +180,28 @@ impl SolanaAdapter {
             .compute_node(compute_node_address.clone())
             .compute_node_info(compute_node_info_pda)
             .node_info_cid(node_info_cid)
+            .instruction();
+
+        let signature = self.send_and_confirm_transaction(
+            &[instruction],
+            self.payer_pubkey(),
+            &[&self.keypair],
+        ).await?;
+
+        Ok(signature)
+    }
+
+    pub async fn activate_agent(
+        &self,
+        agent: &Agent,
+    ) -> Result<String> {
+        let agent_pda = self.derive_agent_pda(&agent.owner, agent.agent_id)?;
+
+        let instruction = ActivateAgentBuilder::new()
+            .payer(self.payer_pubkey())
+            .compute_node(self.payer_pubkey())
+            .agent(agent_pda)
+            .agent_id(agent.agent_id)
             .instruction();
 
         let signature = self.send_and_confirm_transaction(
