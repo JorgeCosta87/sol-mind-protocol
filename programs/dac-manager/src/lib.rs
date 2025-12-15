@@ -27,6 +27,10 @@ pub mod dac_manager {
     pub fn create_agent(ctx: Context<CreateAgent>, agent_id: u64, public: bool) -> Result<()> {
         ctx.accounts.create_agent(agent_id, public, &ctx.bumps)
     }
+    
+    pub fn activate_agent(ctx: Context<ActivateAgent>, agent_id: u64) -> Result<()> {
+        ctx.accounts.activate_agent()
+    }
 
     pub fn submit_task(ctx: Context<SubmitTask>, data: Vec<u8>) -> Result<()> {
         ctx.accounts.submit_task(data)

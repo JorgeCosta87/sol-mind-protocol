@@ -14,6 +14,7 @@ import {
   type ReadonlyUint8Array,
 } from 'gill';
 import {
+  type ParsedActivateAgentInstruction,
   type ParsedClaimComputeNodeInstruction,
   type ParsedClaimTaskInstruction,
   type ParsedCreateAgentInstruction,
@@ -74,6 +75,7 @@ export function identifyDacManagerAccount(
 }
 
 export enum DacManagerInstruction {
+  ActivateAgent,
   ClaimComputeNode,
   ClaimTask,
   CreateAgent,
@@ -86,6 +88,17 @@ export function identifyDacManagerInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
 ): DacManagerInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([252, 139, 87, 21, 195, 152, 29, 217])
+      ),
+      0
+    )
+  ) {
+    return DacManagerInstruction.ActivateAgent;
+  }
   if (
     containsBytes(
       data,
@@ -160,6 +173,9 @@ export function identifyDacManagerInstruction(
 export type ParsedDacManagerInstruction<
   TProgram extends string = 'DeXj8mQDYUnLC2mX5xiRqgvYt193sBhJWRZTBkRLg79M',
 > =
+  | ({
+      instructionType: DacManagerInstruction.ActivateAgent;
+    } & ParsedActivateAgentInstruction<TProgram>)
   | ({
       instructionType: DacManagerInstruction.ClaimComputeNode;
     } & ParsedClaimComputeNodeInstruction<TProgram>)

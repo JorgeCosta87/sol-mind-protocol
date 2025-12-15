@@ -6,5 +6,6 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './agentStatus';
 export * from './computeNodeStatus';
 export * from './taskStatus';

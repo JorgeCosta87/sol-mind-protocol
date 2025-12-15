@@ -5,6 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use crate::generated::types::AgentStatus;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_pubkey::Pubkey;
@@ -25,13 +26,14 @@ pub struct Agent {
     )]
     pub compute_node: Pubkey,
     pub public: bool,
+    pub status: AgentStatus,
     pub bump: u8,
 }
 
 pub const AGENT_DISCRIMINATOR: [u8; 8] = [47, 166, 112, 147, 155, 197, 86, 7];
 
 impl Agent {
-    pub const LEN: usize = 82;
+    pub const LEN: usize = 83;
 
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {

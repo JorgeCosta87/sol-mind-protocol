@@ -40,6 +40,12 @@ import {
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
 } from 'gill';
+import {
+  getAgentStatusDecoder,
+  getAgentStatusEncoder,
+  type AgentStatus,
+  type AgentStatusArgs,
+} from '../types';
 
 export const AGENT_DISCRIMINATOR = new Uint8Array([
   47, 166, 112, 147, 155, 197, 86, 7,
@@ -55,6 +61,7 @@ export type Agent = {
   owner: Address;
   computeNode: Address;
   public: boolean;
+  status: AgentStatus;
   bump: number;
 };
 
@@ -63,6 +70,7 @@ export type AgentArgs = {
   owner: Address;
   computeNode: Address;
   public: boolean;
+  status: AgentStatusArgs;
   bump: number;
 };
 
@@ -74,6 +82,7 @@ export function getAgentEncoder(): FixedSizeEncoder<AgentArgs> {
       ['owner', getAddressEncoder()],
       ['computeNode', getAddressEncoder()],
       ['public', getBooleanEncoder()],
+      ['status', getAgentStatusEncoder()],
       ['bump', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: AGENT_DISCRIMINATOR })
@@ -87,6 +96,7 @@ export function getAgentDecoder(): FixedSizeDecoder<Agent> {
     ['owner', getAddressDecoder()],
     ['computeNode', getAddressDecoder()],
     ['public', getBooleanDecoder()],
+    ['status', getAgentStatusDecoder()],
     ['bump', getU8Decoder()],
   ]);
 }
@@ -149,5 +159,5 @@ export async function fetchAllMaybeAgent(
 }
 
 export function getAgentSize(): number {
-  return 82;
+  return 83;
 }
