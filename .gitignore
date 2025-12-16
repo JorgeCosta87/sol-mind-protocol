@@ -6,3 +6,5 @@ node_modules
 test-ledger
 test-ledger-magicblock
 .yarn
+clients/rust/src/generated/
+clients/sdk/src/generated/

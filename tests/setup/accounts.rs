@@ -1,7 +1,7 @@
 use litesvm::LiteSVM;
 use sol_mind_protocol_client::{
     accounts::{ProjectConfig, ProtocolConfig},
-    dac_manager::accounts::{Agent, ComputeNodeInfo, TaskData},
+    dac_manager::accounts::{Agent, ComputeNodeInfo, Goal, TaskData},
     nft_operations::accounts::MinterConfig,
     nft_operations::accounts::{Listing, TradeHub},
     DAC_MANAGER_ID, NFT_OPERATIONS_ID, SOL_MIND_PROTOCOL_ID,
@@ -151,14 +151,32 @@ impl AccountHelper {
         Agent::from_bytes(&account.data).expect("Failed to deserialize agent account")
     }
 
-    pub fn find_task_data_pda(agent: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::try_find_program_address(&[b"task_data", agent.as_ref()], &DAC_MANAGER_ID).unwrap()
+    pub fn find_task_data_pda_with_index(agent: &Pubkey, task_index: u32) -> (Pubkey, u8) {
+        Pubkey::try_find_program_address(
+            &[b"task_data", agent.as_ref(), &task_index.to_le_bytes()],
+            &DAC_MANAGER_ID,
+        )
+        .unwrap()
     }
 
-    pub fn get_task_data(svm: &LiteSVM, agent: &Pubkey) -> TaskData {
-        let addr = Self::find_task_data_pda(agent).0;
+    pub fn get_task_data_with_index(svm: &LiteSVM, agent: &Pubkey, task_index: u32) -> TaskData {
+        let addr = Self::find_task_data_pda_with_index(agent, task_index).0;
         let account = svm.get_account(&addr).expect("Task data account not found");
         TaskData::from_bytes(&account.data).expect("Failed to deserialize task data account")
+    }
+
+    pub fn find_goal_pda(agent: &Pubkey, goal_index: u32) -> (Pubkey, u8) {
+        Pubkey::try_find_program_address(
+            &[b"goal", agent.as_ref(), &goal_index.to_le_bytes()],
+            &DAC_MANAGER_ID,
+        )
+        .unwrap()
+    }
+
+    pub fn get_goal(svm: &LiteSVM, agent: &Pubkey, goal_index: u32) -> Goal {
+        let addr = Self::find_goal_pda(agent, goal_index).0;
+        let account = svm.get_account(&addr).expect("Goal account not found");
+        Goal::from_bytes(&account.data).expect("Failed to deserialize goal account")
     }
 
     pub fn find_compute_node_info_pda(node_pubkey: &Pubkey) -> (Pubkey, u8) {

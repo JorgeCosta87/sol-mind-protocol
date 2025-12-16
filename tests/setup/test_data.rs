@@ -63,3 +63,13 @@ pub fn default_fees_structure() -> sol_mind_protocol_client::types::FeesStructur
         },
     }
 }
+
+
+// Dac Manager Test Data
+pub const COMPUTE_NODE_INFO_CID: &str = "QmExample123";
+pub const GOAL_DESCRIPTION: &str = "Test Goal";
+pub const ALLOCATED_GOALS: u32 = 2;
+pub const ALLOCATED_TASKS: u32 = 3;
+pub const GOAL_INDEX_0: u32 = 0;
+pub const GOAL_MAX_ITERATIONS: u64 = 10;
+pub const TASK_INDEX_0: u32 = 0;

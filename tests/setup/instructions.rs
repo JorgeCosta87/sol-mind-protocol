@@ -8,7 +8,7 @@ use sol_mind_protocol_client::nft_operations::{
 };
 use sol_mind_protocol_client::{
     dac_manager::instructions::{
-        ActivateAgentBuilder, ClaimComputeNodeBuilder, CreateAgentBuilder, RegisterComputeNodeBuilder, SubmitTaskBuilder,
+        ActivateAgentBuilder, ClaimComputeNodeBuilder, CreateAgentBuilder, RegisterComputeNodeBuilder, SetGoalBuilder, SubmitTaskBuilder,
     },
     instructions::{
         CreateProjectBuilder, InitializeProtocolBuilder, TransferProjectFeesBuilder,
@@ -17,7 +17,7 @@ use sol_mind_protocol_client::{
     types::{Fee, FeesStructure, Operation},
 };
 use solana_pubkey::Pubkey;
-use solana_sdk::signature::Keypair;
+use solana_sdk::{instruction::AccountMeta, signature::Keypair};
 use solana_sdk_ids::system_program::ID as SYSTEM_PROGRAM_ID;
 
 use super::accounts::AccountHelper;
@@ -379,23 +379,66 @@ impl Instructions {
         svm: &mut LiteSVM,
         agent_id: u64,
         public: bool,
+        allocated_goals: u32,
+        allocated_tasks: u32,
         compute_node_info_pda: Pubkey,
         owner: Pubkey,
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
         let agent_pda = AccountHelper::find_agent_pda(&owner, agent_id).0;
-        let task_data_pda = AccountHelper::find_task_data_pda(&agent_pda).0;
 
-        let instruction = CreateAgentBuilder::new()
+        let mut remaining_accounts = Vec::new();
+        
+        for goal_index in 0..allocated_goals {
+            let (goal_pda, _) = AccountHelper::find_goal_pda(&agent_pda, goal_index);
+            remaining_accounts.push(AccountMeta::new(goal_pda, false));
+        }
+        
+        for task_index in 0..allocated_tasks {
+            let (task_pda, _) = AccountHelper::find_task_data_pda_with_index(&agent_pda, task_index);
+            remaining_accounts.push(AccountMeta::new(task_pda, false));
+        }
+
+        let mut builder = CreateAgentBuilder::new();
+        builder
             .payer(payer)
             .owner(owner)
             .agent(agent_pda)
             .agent_id(agent_id)
             .public(public)
-            .task_data(task_data_pda)
+            .allocated_goals(allocated_goals)
+            .allocated_tasks(allocated_tasks)
             .system_program(SYSTEM_PROGRAM_ID)
             .compute_node_info(compute_node_info_pda)
+            .add_remaining_accounts(&remaining_accounts);
+        
+        let instruction = builder.instruction();
+
+        utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
+    }
+
+    pub fn set_goal(
+        svm: &mut LiteSVM,
+        agent_pda: Pubkey,
+        goal_index: u32,
+        description: String,
+        max_iterations: u64,
+        owner: Pubkey,
+        payer: Pubkey,
+        signing_keypairs: &[&Keypair],
+    ) -> TransactionResult {
+        let (goal_pda, _) = AccountHelper::find_goal_pda(&agent_pda, goal_index);
+
+        let instruction = SetGoalBuilder::new()
+            .payer(payer)
+            .owner(owner)
+            .goal(goal_pda)
+            .agent(agent_pda)
+            .goal_index(goal_index)
+            .description(description)
+            .max_iterations(max_iterations)
+            .system_program(SYSTEM_PROGRAM_ID)
             .instruction();
 
         utils::send_transaction(svm, &[instruction], &payer, signing_keypairs)
@@ -403,18 +446,20 @@ impl Instructions {
 
     pub fn submit_task(
         svm: &mut LiteSVM,
+        task_index: u32,
         task_data: Vec<u8>,
         agent_pda: Pubkey,
         submitter: Pubkey,
         payer: Pubkey,
         signing_keypairs: &[&Keypair],
     ) -> TransactionResult {
-        let task_data_pda = AccountHelper::find_task_data_pda(&agent_pda).0;
+        let task_data_pda = AccountHelper::find_task_data_pda_with_index(&agent_pda, 0).0;
 
         let mut builder = SubmitTaskBuilder::new();
         builder
             .payer(payer)
             .submitter(submitter)
+            .task_index(task_index)
             .task_data(task_data_pda)
             .agent(agent_pda)
             .system_program(SYSTEM_PROGRAM_ID)

@@ -361,7 +361,7 @@ impl TestFixture {
     }
 
     pub fn with_claim_compute_node(mut self, node_info_cid: Option<String>) -> Self {
-        let cid = node_info_cid.unwrap_or_else(|| "QmExample123".to_string());
+        let cid = node_info_cid.unwrap_or_else(|| COMPUTE_NODE_INFO_CID.to_string());
 
         Instructions::claim_compute_node(
             &mut self.svm,
@@ -378,7 +378,11 @@ impl TestFixture {
         self
     }
 
-    pub fn with_create_agent(mut self) -> Self {
+    pub fn with_create_agent(self) -> Self {
+        self.with_create_agent_with_allocation(ALLOCATED_GOALS, ALLOCATED_TASKS)
+    }
+
+    pub fn with_create_agent_with_allocation(mut self, allocated_goals: u32, allocated_tasks: u32) -> Self {
         let compute_node_info_pda =
             AccountHelper::find_compute_node_info_pda(&self.compute_node.pubkey()).0;
 
@@ -386,6 +390,8 @@ impl TestFixture {
             &mut self.svm,
             AGENT_ID,
             true,
+            allocated_goals,
+            allocated_tasks,
             compute_node_info_pda,
             self.project_owner.pubkey(),
             self.payer.pubkey(),
