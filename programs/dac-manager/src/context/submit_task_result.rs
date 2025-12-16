@@ -34,7 +34,6 @@ impl<'info> SubmitTaskResult<'info> {
         );
 
         self.task_data.status = TaskStatus::Processing;
-        self.task_data.compute_node = self.compute_node.key();
 
         Ok(())
     }

@@ -5,6 +5,7 @@ declare_id!("DeXj8mQDYUnLC2mX5xiRqgvYt193sBhJWRZTBkRLg79M");
 pub mod context;
 pub mod errors;
 pub mod state;
+pub mod utils;
 
 pub use context::*;
 pub use state::*;
@@ -24,15 +25,23 @@ pub mod dac_manager {
         ctx.accounts.claim_compute_node(node_info_cid)
     }
 
-    pub fn create_agent(ctx: Context<CreateAgent>, agent_id: u64, public: bool) -> Result<()> {
-        ctx.accounts.create_agent(agent_id, public, &ctx.bumps)
+    pub fn create_agent<'info>(
+        ctx: Context<'_, '_, '_, 'info, CreateAgent<'info>>, 
+        agent_id: u64, 
+        public: bool, 
+        allocated_goals: u32,
+        allocated_tasks: u32,
+    ) -> Result<()> {
+        ctx.accounts.create_agent(
+            agent_id, public, allocated_goals, allocated_tasks, &ctx.remaining_accounts, &ctx.bumps,
+        )
     }
     
     pub fn activate_agent(ctx: Context<ActivateAgent>, agent_id: u64) -> Result<()> {
         ctx.accounts.activate_agent()
     }
 
-    pub fn submit_task(ctx: Context<SubmitTask>, data: Vec<u8>) -> Result<()> {
+    pub fn submit_task(ctx: Context<SubmitTask>, task_index: u32, data: Vec<u8>) -> Result<()> {
         ctx.accounts.submit_task(data)
     }
 
@@ -42,5 +51,9 @@ pub mod dac_manager {
 
     pub fn submit_task_result(ctx: Context<SubmitTaskResult>, result: Vec<u8>) -> Result<()> {
         ctx.accounts.submit_task_result(result)
+    }
+
+    pub fn set_goal(ctx: Context<SetGoal>, goal_index: u32, description: String, max_iterations: u64) -> Result<()> {
+        ctx.accounts.set_goal(description, max_iterations)
     }
 }

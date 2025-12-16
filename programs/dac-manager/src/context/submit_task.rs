@@ -4,6 +4,7 @@ use crate::errors::ErrorCode;
 use crate::state::{Agent, TaskData, TaskStatus};
 
 #[derive(Accounts)]
+#[instruction(task_index: u32)]
 pub struct SubmitTask<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -11,7 +12,7 @@ pub struct SubmitTask<'info> {
     pub submitter: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"task_data", agent.key().as_ref()],
+        seeds = [b"task_data", agent.key().as_ref(), task_index.to_le_bytes().as_ref()],
         bump = task_data.bump,
     )]
     pub task_data: Account<'info, TaskData>,
@@ -37,13 +38,8 @@ impl<'info> SubmitTask<'info> {
             ErrorCode::InvalidTaskStatus
         );
 
-        self.task_data.set_inner(TaskData {
-            compute_node: self.agent.compute_node,
-            data: data,
-            status: TaskStatus::Pending,
-            result: vec![],
-            bump: self.task_data.bump,
-        });
+        self.task_data.data = data;
+        self.task_data.status = TaskStatus::AwaitingValidation;
 
         Ok(())
     }

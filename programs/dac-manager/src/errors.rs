@@ -16,4 +16,10 @@ pub enum ErrorCode {
     ComputeNodeMismatch,
     #[msg("Agent is not public or the owner of the compute node")]
     AgentNotPublicOrComputeNodeOwner,
+    #[msg("Missing account")]
+    MissingAccount,
+    #[msg("Invalid goal PDA")]
+    InvalidGoalPDA,
+    #[msg("Account already initialized")]
+    AccountAlreadyInitialized,
 }

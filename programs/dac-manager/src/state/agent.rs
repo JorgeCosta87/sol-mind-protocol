@@ -15,5 +15,7 @@ pub struct Agent {
     pub compute_node: Pubkey,
     pub public: bool,
     pub status: AgentStatus,
+    pub allocated_goals: u32,
+    pub allocated_tasks: u32,
     pub bump: u8,
 }
